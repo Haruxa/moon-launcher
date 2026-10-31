@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import dev.margymc.launcher.*
 import kotlinx.coroutines.Dispatchers
@@ -67,11 +68,18 @@ fun HorizonScreen(prefs: Prefs) {
 
         items(visible, key = { it.id }) { p ->
             ShapeCard(polygon = Morf.Cookie9) {
-                Text(p.name, style = MaterialTheme.typography.titleLarge)
+                Text(
+                    p.name,
+                    style = MaterialTheme.typography.titleLarge,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
                 Text(
                     p.summary,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 3,
+                    overflow = TextOverflow.Ellipsis,
                 )
                 Spacer(Modifier.height(10.dp))
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -131,6 +139,8 @@ fun ModrinthScreen(prefs: Prefs) {
     var hits by remember { mutableStateOf<List<Modrinth.Hit>>(emptyList()) }
     var busy by remember { mutableStateOf(false) }
     var status by remember { mutableStateOf<String?>(null) }
+    val analyzed = remember { mutableStateMapOf<String, Analyze.Result>() }
+    val jars = remember { mutableStateMapOf<String, File>() }
 
     fun refresh() {
         scope.launch {
@@ -148,9 +158,14 @@ fun ModrinthScreen(prefs: Prefs) {
         contentPadding = PaddingValues(PagePadding),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        item { ScreenHeader("Modrinth", "Ресурспаки, шейдеры и датапаки под игру 26.x") }
         item {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            ScreenHeader("Modrinth", "Пакеты — как есть, Java-моды переносим данными в .hmod")
+        }
+        item {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.horizontalScroll(rememberScrollState()),
+            ) {
                 Modrinth.Kind.entries.forEach { k ->
                     FilterChip(selected = kind == k, onClick = { kind = k }, label = { Text(k.title) })
                 }
@@ -174,31 +189,110 @@ fun ModrinthScreen(prefs: Prefs) {
         if (busy) item { WaveProgress({ 0.35f }) }
 
         items(hits, key = { it.id }) { h ->
+            val res = analyzed[h.id]
             ShapeCard(polygon = Morf.Cookie9) {
-                Text(h.title, style = MaterialTheme.typography.titleMedium)
+                Text(
+                    h.title,
+                    style = MaterialTheme.typography.titleMedium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
                 Text(
                     h.description,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
                 )
                 Spacer(Modifier.height(8.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    if (kind == Modrinth.Kind.MOD) {
+                        when {
+                            res == null -> StatusPill("нужен анализ")
+                            else -> CompatBadge(res.level)
+                        }
+                    }
+                    Spacer(Modifier.weight(1f))
                     Text(
-                        "${h.downloads} загрузок · ${h.author}",
-                        style = MaterialTheme.typography.labelMedium,
-                        modifier = Modifier.weight(1f),
+                        "${h.downloads} · ${h.author}",
+                        style = MaterialTheme.typography.labelSmall,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                     )
-                    ExpressiveButton("Ставить", Icons.Rounded.Download) {
-                        scope.launch {
-                            status = "${h.title}: скачиваю…"
-                            runCatching {
-                                withContext(Dispatchers.IO) {
-                                    val f = Modrinth.file(h.id) ?: error("нет сборки под 26.3")
-                                    val dir = File(prefs.home, kind.target)
-                                    Install.downloadVerified(f.url, File(dir, f.name), f.sha1, "SHA-1")
+                }
+                if (res != null) {
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        "${res.detail} — ${res.note}",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Spacer(Modifier.height(10.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (kind == Modrinth.Kind.MOD) {
+                        OutlinedButton(
+                            onClick = {
+                                scope.launch {
+                                    status = "${h.title}: качаю jar для анализа…"
+                                    runCatching {
+                                        withContext(Dispatchers.IO) {
+                                            val f = Modrinth.file(h.id, kind) ?: error("нет файла мода")
+                                            val jar = jars[h.id] ?: File(
+                                                ctx.cacheDir,
+                                                "jars/${h.slug.ifBlank { h.id }}-${f.version}.jar",
+                                            ).also { Install.downloadVerified(f.url, it, f.sha1, "SHA-1") }
+                                            jars[h.id] = jar
+                                            Analyze.analyze(jar, h.slug.ifBlank { h.id }, h.categories)
+                                                .also { analyzed[h.id] = it }
+                                        }
+                                        status = "${h.title}: ${analyzed[h.id]?.level?.title}"
+                                    }.onFailure { status = "${h.title}: ${it.message}" }
                                 }
-                            }.onSuccess { status = "${h.title}: установлено в ${kind.target}" }
-                                .onFailure { status = "${h.title}: ${it.message}" }
+                            },
+                        ) { Text("Анализ") }
+
+                        if (res != null && res.level != Analyze.Level.IMPOSSIBLE && res.level != Analyze.Level.NOT_NEEDED) {
+                            ExpressiveButton("В .hmod", Icons.Rounded.Build) {
+                                scope.launch {
+                                    status = "${h.title}: собираю .hmod…"
+                                    runCatching {
+                                        withContext(Dispatchers.IO) {
+                                            val jar = jars[h.id] ?: error("сначала анализ")
+                                            val f = Modrinth.file(h.id, kind)
+                                            val id = h.slug.ifBlank { h.id }
+                                            Analyze.convert(
+                                                jar = jar,
+                                                id = id,
+                                                name = h.title,
+                                                version = f?.version ?: "1.0",
+                                                description = h.description,
+                                                authors = h.author,
+                                                out = File(prefs.modsDir, "$id.hmod"),
+                                            )
+                                        }
+                                    }.onSuccess { c ->
+                                        status = "${h.title}: ${c.files} файлов, пропущено ${c.skipped} → ${c.file.name}"
+                                    }.onFailure { status = "${h.title}: ${it.message}" }
+                                }
+                            }
+                        }
+                    } else {
+                        ExpressiveButton("Ставить", Icons.Rounded.Download) {
+                            scope.launch {
+                                status = "${h.title}: скачиваю…"
+                                runCatching {
+                                    withContext(Dispatchers.IO) {
+                                        val f = Modrinth.file(h.id, kind) ?: error("нет сборки под 26.x")
+                                        val dir = File(prefs.home, kind.target)
+                                        Install.downloadVerified(f.url, File(dir, f.name), f.sha1, "SHA-1")
+                                    }
+                                }.onSuccess { status = "${h.title}: установлено в ${kind.target}" }
+                                    .onFailure { status = "${h.title}: ${it.message}" }
+                            }
                         }
                     }
                 }
@@ -374,4 +468,17 @@ private fun openUnknownSources(ctx: Context) {
             android.net.Uri.parse("package:${ctx.packageName}"),
         ).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
     )
+}
+
+/** Бейдж «насколько мод переносится в Horizon». */
+@Composable
+fun CompatBadge(level: Analyze.Level) {
+    val scheme = MaterialTheme.colorScheme
+    val (bg, fg) = when (level) {
+        Analyze.Level.FULL -> scheme.tertiaryContainer to scheme.onTertiaryContainer
+        Analyze.Level.PARTIAL -> scheme.secondaryContainer to scheme.onSecondaryContainer
+        Analyze.Level.NOT_NEEDED -> scheme.surfaceContainerHighest to scheme.onSurfaceVariant
+        Analyze.Level.IMPOSSIBLE -> scheme.errorContainer to scheme.onErrorContainer
+    }
+    StatusPill(level.short, bg, fg)
 }
