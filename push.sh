@@ -2,9 +2,9 @@
 # Заливает проект лаунчера в приватный репозиторий Haruxa/margymc-launcher.
 set -u
 cd "$(dirname "$0")"
-REPO="Haruxa/margymc-launcher"
+REPO="Haruxa/moon-launcher"
 
-gh api -X POST user/repos -f name=margymc-launcher -F private=true -f description="MargyMC Launcher" >/dev/null 2>&1
+gh api -X POST user/repos -f name=moon-launcher -F private=true -f description="Moon launcher" >/dev/null 2>&1
 
 push_file() {
   local path="$1"
@@ -19,7 +19,7 @@ push_file() {
 
 find . -type f \
   \( -name '*.kt' -o -name '*.kts' -o -name '*.xml' -o -name '*.properties' -o -name '*.yml' \
-     -o -name '*.py' -o -name '*.sh' \) \
+     -o -name '*.py' -o -name '*.sh' -o -name '*.png' \) \
   -not -path './build/*' -not -path './.gradle/*' | sed 's|^\./||' | sort | while read -r f; do
   push_file "$f"
 done
