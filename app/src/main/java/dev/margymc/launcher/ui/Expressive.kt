@@ -215,28 +215,58 @@ fun WaveProgress(progress: () -> Float, modifier: Modifier = Modifier) {
     }
 }
 
-/** Морфный лоадер: вращающаяся пульсирующая «печенька». */
+/**
+ * Морфный лоадер: три формы (круг → сквиркл → шестиугольник) сменяют друг
+ * друга по очереди, с плавным появлением и затуханием — без наложений.
+ */
 @Composable
 fun MorphLoading(modifier: Modifier = Modifier) {
     val color = MaterialTheme.colorScheme.primary
     val transition = rememberInfiniteTransition(label = "morph")
-    val spin by transition.animateFloat(
+    val cycle by transition.animateFloat(
         initialValue = 0f,
-        targetValue = 360f,
-        animationSpec = infiniteRepeatable(tween(1500, easing = LinearEasing), RepeatMode.Restart),
-        label = "spin",
-    )
-    val pulse by transition.animateFloat(
-        initialValue = 0.84f,
-        targetValue = 0.94f,
-        animationSpec = infiniteRepeatable(tween(700), RepeatMode.Reverse),
-        label = "pulse",
+        targetValue = 3f,
+        animationSpec = infiniteRepeatable(tween(2100, easing = LinearEasing), RepeatMode.Restart),
+        label = "cycle",
     )
     Canvas(modifier.size(36.dp)) {
-        rotate(spin) {
-            drawPath(blobPath(size.width, size.height, 6, pulse), color)
+        val idx = cycle.toInt().coerceIn(0, 2)
+        val local = (cycle - cycle.toInt()).coerceIn(0f, 0.999f)
+        // появление → держим → затухание
+        val alpha = when {
+            local < 0.18f -> local / 0.18f
+            local > 0.82f -> (1f - local) / 0.18f
+            else -> 1f
+        }.coerceIn(0f, 1f)
+        if (alpha <= 0.01f) return@Canvas
+        val paint = color.copy(alpha = alpha)
+        val grow = 0.72f + 0.28f * alpha
+        val side = size.minDimension * grow
+        val center = Offset(size.width / 2f, size.height / 2f)
+        rotate(cycle * 12f, pivot = center) {
+            when (idx) {
+                0 -> drawCircle(paint, radius = side / 2f, center = center)
+                1 -> drawRoundRect(
+                    paint,
+                    topLeft = Offset(center.x - side / 2f, center.y - side / 2f),
+                    size = androidx.compose.ui.geometry.Size(side, side),
+                    cornerRadius = CornerRadius(side * 0.42f, side * 0.42f),
+                )
+                else -> drawPath(hexPath(center, side / 2f), paint)
+            }
         }
     }
+}
+
+/** Правильный шестиугольник. */
+private fun hexPath(center: Offset, radius: Float): Path = Path().apply {
+    for (i in 0 until 6) {
+        val a = (PI / 3.0 * i).toFloat()
+        val x = center.x + radius * cos(a)
+        val y = center.y + radius * sin(a)
+        if (i == 0) moveTo(x, y) else lineTo(x, y)
+    }
+    close()
 }
 
 /** Строка «идёт работа». */
