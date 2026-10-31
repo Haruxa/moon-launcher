@@ -201,6 +201,20 @@ private fun Editor(file: File) {
                         modifier = Modifier.fillMaxWidth(),
                     )
 
+                    Text(I18n.t("Иконка"), fontSize = 12.sp, color = colors.onSurfaceVariant)
+                    Row(
+                        Modifier.horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
+                        TouchProfiles.icons.forEach { icon ->
+                            FilterChip(
+                                selected = c.icon == icon,
+                                onClick = { list[index] = c.copy(icon = icon); dirty = true },
+                                label = { Text(TouchProfiles.iconTitle(icon), fontSize = 11.sp) },
+                            )
+                        }
+                    }
+
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text(I18n.t("Размер"), fontSize = 12.sp)
                         Spacer(Modifier.weight(1f))
