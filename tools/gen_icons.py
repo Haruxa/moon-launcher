@@ -261,7 +261,8 @@ def apply_mask(nw, nh, out, kind, radius_ratio=0.22):
 DENSITIES = {"mdpi": 1.0, "hdpi": 1.5, "xhdpi": 2.0, "xxhdpi": 3.0, "xxxhdpi": 4.0}
 
 
-def build(src_path, res_dir, legacy_bg=(255, 255, 255, 255), prefix="ic_launcher", layout="gradle"):
+def build(src_path, res_dir, legacy_bg=(255, 255, 255, 255), prefix="ic_launcher", layout="gradle",
+          scale_fg=0.42, scale_legacy=0.52):
     w, h, px = read_png(src_path)
     drop_white_bg(w, h, px)
     x0, y0, x1, y1 = bbox(w, h, px)
@@ -272,8 +273,8 @@ def build(src_path, res_dir, legacy_bg=(255, 255, 255, 255), prefix="ic_launcher
     for dens, mult in DENSITIES.items():
         d = os.path.join(res_dir, f"mipmap-{dens}")
         fg = int(round(108 * mult))
-        out = cover(fg, fg, aw, ah, apx, bg=None, scale=0.60)
-        mono = cover(fg, fg, aw, ah, apx, bg=None, scale=0.60, colorize=(255, 255, 255))
+        out = cover(fg, fg, aw, ah, apx, bg=None, scale=scale_fg)
+        mono = cover(fg, fg, aw, ah, apx, bg=None, scale=scale_fg, colorize=(255, 255, 255))
         if layout == "gradle":
             write_png(os.path.join(d, f"{prefix}_foreground.png"), fg, fg, out)
             write_png(os.path.join(d, f"{prefix}_monochrome.png"), fg, fg, mono)
@@ -283,11 +284,11 @@ def build(src_path, res_dir, legacy_bg=(255, 255, 255, 255), prefix="ic_launcher
             write_png(os.path.join(dd, f"{prefix}_foreground.png"), fg, fg, out)
             write_png(os.path.join(dd, f"{prefix}_monochrome.png"), fg, fg, mono)
         lg = int(round(48 * mult))
-        leg = cover(lg, lg, aw, ah, apx, bg=legacy_bg, scale=0.72)
+        leg = cover(lg, lg, aw, ah, apx, bg=legacy_bg, scale=scale_legacy)
         apply_mask(lg, lg, leg, "round")
         write_png(os.path.join(d, f"{prefix}.png"), lg, lg, leg)
         if layout == "gradle":
-            rnd = cover(lg, lg, aw, ah, apx, bg=legacy_bg, scale=0.68)
+            rnd = cover(lg, lg, aw, ah, apx, bg=legacy_bg, scale=scale_legacy - 0.04)
             apply_mask(lg, lg, rnd, "circle")
             write_png(os.path.join(d, f"{prefix}_round.png"), lg, lg, rnd)
         print(f"  {dens}: {fg}px adaptive, {lg}px legacy")
@@ -324,10 +325,13 @@ def main():
     ap.add_argument("--out", required=True, help="каталог res")
     ap.add_argument("--prefix", default="ic_launcher")
     ap.add_argument("--layout", choices=["gradle", "flat"], default="gradle")
+    ap.add_argument("--scale-fg", type=float, default=0.42, help="доля канвы 108dp под арт")
+    ap.add_argument("--scale-legacy", type=float, default=0.52)
     ap.add_argument("--no-legacy-bg", action="store_true")
     args = ap.parse_args()
     bg = (0, 0, 0, 0) if args.no_legacy_bg else (255, 255, 255, 255)
-    build(args.src, args.out, legacy_bg=bg, prefix=args.prefix, layout=args.layout)
+    build(args.src, args.out, legacy_bg=bg, prefix=args.prefix, layout=args.layout,
+          scale_fg=args.scale_fg, scale_legacy=args.scale_legacy)
     write_adaptive_xml(args.out, args.prefix, layout=args.layout)
 
 
