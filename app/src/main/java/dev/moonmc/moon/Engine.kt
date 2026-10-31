@@ -41,6 +41,51 @@ object Engine {
         return out.sortedWith(compareByDescending<Nightly> { it.date }.thenByDescending { it.sha })
     }
 
+    /** Матрица совместимости модов с пином: ci/compat/<pin7>.json из репозитория сборки. */
+    data class Compat(
+        val pin: String,
+        val engine: String,
+        val generated: String,
+        val results: Map<String, Result>,
+    ) {
+        data class Result(val ok: Boolean, val stage: String, val note: String)
+
+        fun of(modId: String): Result? = results[modId]
+    }
+
+    private const val COMPAT_BASE =
+        "https://raw.githubusercontent.com/Haruxa/moonmc-apk/main/ci/compat"
+
+    /** null — матрицы для этого пина ещё нет. */
+    fun compat(pin: String, token: String? = null): Compat? {
+        if (pin.isBlank()) return null
+        val text = try {
+            Http.request("$COMPAT_BASE/${pin.take(7)}.json", null, token)
+        } catch (e: Exception) {
+            if (e.message.orEmpty().contains("404")) return null
+            throw e
+        }
+        val root = org.json.JSONObject(text)
+        val arr = root.optJSONArray("mods") ?: return null
+        val map = LinkedHashMap<String, Compat.Result>(arr.length())
+        for (i in 0 until arr.length()) {
+            val o = arr.getJSONObject(i)
+            val id = o.optString("id")
+            if (id.isBlank()) continue
+            map[id] = Compat.Result(
+                ok = o.optBoolean("ok", false),
+                stage = o.optString("stage"),
+                note = o.optString("note"),
+            )
+        }
+        return Compat(
+            pin = root.optString("pin"),
+            engine = root.optString("engine"),
+            generated = root.optString("generated"),
+            results = map,
+        )
+    }
+
     /** Полный sha коммита по короткому (пин должен быть полным: его сверяют манифесты модов). */
     fun resolve(token: String?, ref: String): String =
         org.json.JSONObject(
