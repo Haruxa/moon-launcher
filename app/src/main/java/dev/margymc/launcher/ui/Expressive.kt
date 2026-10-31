@@ -38,6 +38,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.drawscope.rotate
@@ -195,36 +196,21 @@ fun StatusPill(
     }
 }
 
-/** Волнистый прогресс. */
+/** Прогресс: закруглённая полоса, заполнение с мягким свечением. */
 @Composable
 fun WaveProgress(progress: () -> Float, modifier: Modifier = Modifier) {
     val color = MaterialTheme.colorScheme.primary
     val track = MaterialTheme.colorScheme.surfaceContainerHighest
-    val transition = rememberInfiniteTransition(label = "wave")
-    val phase by transition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(tween(1600, easing = LinearEasing), RepeatMode.Restart),
-        label = "phase",
-    )
-    Canvas(modifier.fillMaxWidth().height(14.dp)) {
-        val w = size.width
-        val mid = size.height / 2f
-        val amp = size.height * 0.28f
-        val stroke = 6.dp.toPx()
-        drawLine(track, Offset(0f, mid), Offset(w, mid), strokeWidth = stroke, cap = StrokeCap.Round)
-        val done = progress().coerceIn(0f, 1f) * w
-        if (done <= 1f) return@Canvas
-        clipRect(right = done) {
-            val path = Path()
-            var x = 0f
-            path.moveTo(0f, mid)
-            while (x <= w) {
-                val y = mid + amp * sin((x / w * 3f + phase) * 2f * PI.toFloat())
-                path.lineTo(x, y)
-                x += 6f
-            }
-            drawPath(path, color, style = Stroke(width = stroke, cap = StrokeCap.Round))
+    Canvas(modifier.fillMaxWidth().height(10.dp)) {
+        val h = size.height
+        drawRoundRect(track, cornerRadius = CornerRadius(h / 2f, h / 2f))
+        val done = progress().coerceIn(0f, 1f) * size.width
+        if (done > h) {
+            drawRoundRect(
+                color,
+                size = androidx.compose.ui.geometry.Size(done, h),
+                cornerRadius = CornerRadius(h / 2f, h / 2f),
+            )
         }
     }
 }
