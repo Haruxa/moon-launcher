@@ -15,7 +15,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
-import androidx.graphics.shapes.MaterialShapes
 import dev.margymc.launcher.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -67,7 +66,7 @@ fun HorizonScreen(prefs: Prefs) {
         error?.let { item { StatusPill("Ошибка: $it", MaterialTheme.colorScheme.errorContainer, MaterialTheme.colorScheme.onErrorContainer) } }
 
         items(visible, key = { it.id }) { p ->
-            ShapeCard(polygon = MaterialShapes.Cookie9Sided) {
+            ShapeCard(polygon = Morf.Cookie9) {
                 Text(p.name, style = MaterialTheme.typography.titleLarge)
                 Text(
                     p.summary,
@@ -108,7 +107,7 @@ fun HorizonScreen(prefs: Prefs) {
                                             Builder(
                                                 ctx, prefs,
                                                 log = { status = it },
-                                                progress = {},
+                                                progress = { _ -> },
                                             ).build(listOf(v.fileUrl), v.nativePin, v.mixinsPin)
                                         }
                                     }.onFailure { status = "Ошибка: ${it.message}" }
@@ -175,7 +174,7 @@ fun ModrinthScreen(prefs: Prefs) {
         if (busy) item { WaveProgress({ 0.35f }) }
 
         items(hits, key = { it.id }) { h ->
-            ShapeCard(polygon = MaterialShapes.Cookie9Sided) {
+            ShapeCard(polygon = Morf.Cookie9) {
                 Text(h.title, style = MaterialTheme.typography.titleMedium)
                 Text(
                     h.description,
@@ -227,7 +226,7 @@ fun BuildScreen(prefs: Prefs) {
             ScreenHeader("Сборка APK", "Нативные моды (.hnmod) вшиваются в игру в GitHub Actions")
         }
         item {
-            ShapeCard(polygon = MaterialShapes.Sunny) {
+            ShapeCard(polygon = Morf.Sunny) {
                 Text("Как это работает", style = MaterialTheme.typography.titleMedium)
                 Text(
                     "Лаунчер кладёт рецепт сборки в твой приватный репозиторий, запускает " +
@@ -289,7 +288,7 @@ fun SettingsScreen(prefs: Prefs) {
     ) {
         item { ScreenHeader("Ещё", "Подключение, папки и права") }
         item {
-            ShapeCard(polygon = MaterialShapes.Cookie9Sided) {
+            ShapeCard(polygon = Morf.Cookie9) {
                 Text("GitHub", style = MaterialTheme.typography.titleMedium)
                 OutlinedTextField(
                     value = token,
@@ -313,7 +312,7 @@ fun SettingsScreen(prefs: Prefs) {
             }
         }
         item {
-            ShapeCard(polygon = MaterialShapes.Cookie9Sided) {
+            ShapeCard(polygon = Morf.Cookie9) {
                 Text("Папка игры", style = MaterialTheme.typography.titleMedium)
                 OutlinedTextField(
                     value = home,
@@ -341,7 +340,7 @@ fun SettingsScreen(prefs: Prefs) {
             if (saved) StatusPill("Сохранено")
         }
         item {
-            ShapeCard(polygon = MaterialShapes.Circle) {
+            ShapeCard(polygon = Morf.Circle) {
                 Text("Права", style = MaterialTheme.typography.titleMedium)
                 Text(
                     "Лаунчер пишет файлы в папку игры и отдаёт APK системному установщику.",
