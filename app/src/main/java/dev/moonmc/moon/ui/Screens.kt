@@ -802,6 +802,119 @@ fun BuildScreen(prefs: Prefs) {
     }
 }
 
+/* ---------------------------------- О нас ---------------------------------- */
+
+/** Кто сделал, где следить за проектом и чья лицензия внутри. */
+@Composable
+fun AboutScreen(prefs: Prefs) {
+    val ctx = LocalContext.current
+    val version = remember {
+        runCatching {
+            ctx.packageManager.getPackageInfo(ctx.packageName, 0).versionName
+        }.getOrNull() ?: ""
+    }
+
+    LazyColumn(
+        Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(PagePadding),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        item { ScreenHeader(I18n.t("О нас"), I18n.t("Проект, автор и лицензии")) }
+
+        item {
+            ShapeCard {
+                Text("Moon", style = MaterialTheme.typography.headlineSmall)
+                Text(
+                    I18n.t("Лаунчер и клиент MoonMC — Android-порт Horizon") +
+                        (if (version.isBlank()) "" else " · v$version"),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    I18n.t("Движок: ") + Engine.label(prefs.nativePin, emptyList()),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+
+        item {
+            ShapeCard {
+                Text(I18n.t("Разработчик"), style = MaterialTheme.typography.titleMedium)
+                Text("Haruxa", style = MaterialTheme.typography.bodyLarge)
+                Spacer(Modifier.height(8.dp))
+                ExpressiveButton(I18n.t("GitHub"), Icons.Rounded.OpenInNew) {
+                    Install.openUrl(ctx, "https://github.com/Haruxa")
+                }
+            }
+        }
+
+        item {
+            ShapeCard {
+                Text(I18n.t("Следить за проектом"), style = MaterialTheme.typography.titleMedium)
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    ExpressiveButton("Telegram · @MooN_MCL", Icons.Rounded.Send) {
+                        Install.openUrl(ctx, "https://t.me/MooN_MCL")
+                    }
+                    ExpressiveButton(I18n.t("Репозиторий лаунчера"), Icons.Rounded.Code) {
+                        Install.openUrl(ctx, "https://github.com/Haruxa/moon-launcher")
+                    }
+                    ExpressiveButton(I18n.t("Сборка игры"), Icons.Rounded.Build) {
+                        Install.openUrl(ctx, "https://github.com/Haruxa/moonmc-apk")
+                    }
+                }
+            }
+        }
+
+        item {
+            ShapeCard {
+                Text(I18n.t("Авторы и лицензии"), style = MaterialTheme.typography.titleMedium)
+                Text(
+                    I18n.t(
+                        "Мы стоим на чужой работе, и это указано честно:"
+                    ),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(8.dp))
+                CreditRow("Horizon", "MIT · Ludovic Marie and the Horizon contributors")
+                CreditRow("MargyMC", "MIT · narezany — оригинальный Android-порт")
+                CreditRow("Material Design Icons", "Apache 2.0 · Google LLC")
+                CreditRow("ZalithLauncher 2 JRE", "GPL-2.0 with Classpath Exception")
+                CreditRow("Kotlin · Jetpack Compose", "Apache 2.0 · JetBrains, Google")
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    I18n.t("Сам лаунчер — MIT. Файлы Minecraft не распространяются: " +
+                        "игра берёт твою собственную копию."),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+
+        item {
+            Text(
+                I18n.t("Minecraft — торговая марка Mojang Studios. Проект не связан с Mojang и Microsoft."),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+@Composable
+private fun CreditRow(name: String, license: String) {
+    Column(Modifier.padding(vertical = 2.dp)) {
+        Text(name, style = MaterialTheme.typography.bodyMedium)
+        Text(
+            license,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
 /* -------------------------------- Настройки -------------------------------- */
 
 @Composable
