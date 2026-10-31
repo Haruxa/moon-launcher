@@ -14,10 +14,10 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-      # AGP 8.13 опирается на внутренний API Gradle, вырезанный в 9.6.0 — держим 8.14.3
+      # AGP 9.1 требует Gradle >= 9.3.1
       - uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: '8.14.3'
+          gradle-version: '9.8.2'
       - name: Сборка
         run: gradle --no-daemon assembleDebug
       - uses: actions/upload-artifact@v4
