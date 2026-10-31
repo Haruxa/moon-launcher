@@ -8,6 +8,8 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.matchParentSize
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
@@ -84,11 +86,39 @@ fun blobPath(width: Float, height: Float, lobes: Int, inner: Float, rotation: Fl
     return path
 }
 
-fun morfShape(kind: Morf): Shape = when (kind) {
-    Morf.Circle -> RoundedCornerShape(percent = 50)
-    Morf.Cookie9 -> GenericShape { size, _ -> addPath(blobPath(size.width, size.height, 9, 0.86f)) }
-    Morf.Cookie12 -> GenericShape { size, _ -> addPath(blobPath(size.width, size.height, 12, 0.92f, 0.13f)) }
-    Morf.Sunny -> GenericShape { size, _ -> addPath(blobPath(size.width, size.height, 16, 0.80f)) }
+/** Мягкие параметры для карточек: текст не должен попадать в «зубцы». */
+private fun params(kind: Morf): Triple<Int, Float, Float> = when (kind) {
+    Morf.Circle -> Triple(0, 1f, 0f)
+    Morf.Cookie9 -> Triple(9, 0.94f, 0.0f)
+    Morf.Cookie12 -> Triple(12, 0.96f, 0.06f)
+    Morf.Sunny -> Triple(16, 0.93f, 0f)
+}
+
+fun morfShape(kind: Morf): Shape = GenericShape { size, _ ->
+    val (lobes, inner, rot) = params(kind)
+    if (lobes == 0) {
+        addRoundRect(
+            androidx.compose.ui.geometry.RoundRect(
+                0f, 0f, size.width, size.height,
+                androidx.compose.ui.geometry.CornerRadius(size.height / 2f),
+            )
+        )
+    } else {
+        addPath(blobPath(size.width, size.height, lobes, inner, rot))
+    }
+}
+
+/** Рисует фон-«печеньку» под контентом (без клипа, поэтому текст не съезжает). */
+@Composable
+fun MorfBackground(kind: Morf, color: Color, modifier: Modifier = Modifier) {
+    Canvas(modifier) {
+        val (lobes, inner, rot) = params(kind)
+        if (lobes == 0) {
+            drawRoundRect(color, cornerRadius = androidx.compose.ui.geometry.CornerRadius(size.height / 2f))
+        } else {
+            drawPath(blobPath(size.width, size.height, lobes, inner, rot), color)
+        }
+    }
 }
 
 /** Крупный заголовок экрана. */
@@ -112,15 +142,16 @@ fun ShapeCard(
     modifier: Modifier = Modifier,
     polygon: Morf = Morf.Cookie9,
     containerColor: Color = MaterialTheme.colorScheme.surfaceContainerHigh,
-    contentPadding: Dp = 18.dp,
+    contentPadding: Dp = 20.dp,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    Surface(
-        modifier = modifier.fillMaxWidth(),
-        shape = morfShape(polygon),
-        color = containerColor,
-        content = { Column(Modifier.padding(contentPadding), content = content) },
-    )
+    Box(modifier.fillMaxWidth()) {
+        MorfBackground(polygon, containerColor, Modifier.matchParentSize())
+        Column(
+            Modifier.padding(horizontal = contentPadding + 4.dp, vertical = contentPadding),
+            content = content,
+        )
+    }
 }
 
 /** Кнопка-действие: пилюля, крупная зона нажатия. */
@@ -135,11 +166,11 @@ fun ExpressiveButton(
 ) {
     Button(
         onClick = onClick,
-        modifier = modifier.heightIn(min = 56.dp),
+        modifier = modifier.heightIn(min = 48.dp),
         enabled = enabled,
         shape = RoundedCornerShape(percent = 50),
         colors = colors,
-        contentPadding = PaddingValues(horizontal = 24.dp, vertical = 14.dp),
+        contentPadding = PaddingValues(horizontal = 18.dp, vertical = 10.dp),
     ) {
         if (icon != null) {
             Icon(icon, contentDescription = null, modifier = Modifier.size(20.dp))
