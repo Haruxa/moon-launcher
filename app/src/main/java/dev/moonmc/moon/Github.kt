@@ -43,6 +43,47 @@ object Github {
 
     data class Run(val id: Long, val status: String, val conclusion: String?)
 
+    /** Файл в каталоге репозитория. */
+    data class Entry(val name: String, val size: Long, val sha: String)
+
+    /** Содержимое каталога репозитория (пусто, если каталога нет). */
+    fun listDir(token: String, repo: String, path: String): List<Entry> {
+        val text = try {
+            Http.request("$API/repos/$repo/contents/$path", null, token)
+        } catch (e: Exception) {
+            if (e.message.orEmpty().contains("404")) return emptyList()
+            throw e
+        }
+        val arr = try {
+            org.json.JSONArray(text)
+        } catch (_: Exception) {
+            return emptyList()
+        }
+        val out = ArrayList<Entry>(arr.length())
+        for (i in 0 until arr.length()) {
+            val o = arr.getJSONObject(i)
+            if (o.optString("type") != "file") continue
+            out += Entry(o.getString("name"), o.optLong("size"), o.optString("sha"))
+        }
+        return out.sortedBy { it.name.lowercase() }
+    }
+
+    /** Кладёт двоичный файл (например .hnmod) в репозиторий, перезаписывая старый. */
+    fun putBytes(token: String, repo: String, path: String, bytes: ByteArray, message: String) {
+        val encoded = android.util.Base64.encodeToString(bytes, android.util.Base64.NO_WRAP)
+        val existing = try {
+            JSONObject(Http.request("$API/repos/$repo/contents/$path", null, token)).getString("sha")
+        } catch (_: Exception) {
+            null
+        }
+        val body = buildString {
+            append("{\"message\":\"$message\",\"content\":\"$encoded\"")
+            if (existing != null) append(",\"sha\":\"$existing\"")
+            append("}")
+        }
+        Http.request("$API/repos/$repo/contents/$path", body, token, "PUT")
+    }
+
     fun dispatch(token: String, repo: String, workflow: String, inputs: Map<String, String>) {
         val body = JSONObject().put("ref", "main").put("inputs", JSONObject(inputs as Map<*, *>)).toString()
         Http.request("$API/repos/$repo/actions/workflows/$workflow/dispatches", body, token)
