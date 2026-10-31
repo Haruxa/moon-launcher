@@ -383,7 +383,6 @@ fun SettingsScreen(prefs: Prefs) {
     ) {
         item { ScreenHeader(I18n.t("Ещё"), I18n.t("Подключение, папки и права")) }
         item { GithubCard(prefs) }
-        item { GitCard(prefs) }
         item {
             ShapeCard() {
                 Text(I18n.t("Папка игры"), style = MaterialTheme.typography.titleMedium)
