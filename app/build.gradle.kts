@@ -6,8 +6,7 @@ plugins {
 
 android {
     namespace = "dev.margymc.launcher"
-    // material3 1.5.0-beta02 (M3 Expressive) требует API 37
-    compileSdk = 37
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "dev.margymc.launcher"
@@ -39,9 +38,8 @@ dependencies {
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.foundation:foundation")
     // Material 3 Expressive: LoadingIndicator, MaterialShapes, ToggleButton, ShortNavigationBar, MotionScheme
-    implementation("androidx.compose.material3:material3:1.5.0-beta02")
+    implementation("androidx.compose.material3:material3:1.4.0")
     implementation("androidx.compose.material:material-icons-extended:1.7.8")
     implementation("androidx.compose.ui:ui-tooling-preview")
-    implementation("androidx.graphics:graphics-shapes:1.0.1")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
 }
