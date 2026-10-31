@@ -31,6 +31,7 @@ fun TouchScreen(prefs: Prefs) {
     var profiles by remember { mutableStateOf(listOf<File>()) }
     var active by remember { mutableStateOf("") }
     var tick by remember { mutableStateOf(0) }
+    var status by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(prefs.home, tick) {
         TouchProfiles.ensureDefault(prefs)
@@ -108,6 +109,32 @@ fun TouchScreen(prefs: Prefs) {
             }
         }
 
+        item {
+            ShapeCard {
+                Text(I18n.t("Встроенные профили"), style = MaterialTheme.typography.titleMedium)
+                Text(
+                    I18n.t("Раскладки как в Bedrock: джойстик и хотбар рисует игра, кнопки — из профиля"),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(8.dp))
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    TouchProfiles.presets().forEach { (name, controls) ->
+                        ExpressiveButton(name, Icons.Rounded.Gamepad) {
+                            TouchProfiles.installPreset(prefs, name, controls)
+                            profiles = TouchProfiles.list(prefs)
+                            active = TouchProfiles.active(prefs)
+                            tick++
+                            status = I18n.t("Профиль поставлен: ") + name
+                        }
+                    }
+                }
+                status?.let {
+                    Spacer(Modifier.height(6.dp))
+                    StatusPill(it)
+                }
+            }
+        }
         item {
             Spacer(Modifier.height(4.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
