@@ -137,7 +137,7 @@ object Analyze {
             out.parentFile?.mkdirs()
             ZipOutputStream(out.outputStream().buffered()).use { zos ->
                 zos.putNextEntry(ZipEntry("horizon-mod.toml"))
-                zos.write(manifest(id, name, version, description, authors, namespaces).toByteArray())
+                zos.write(manifest(id, name, version, description, authors, namespaces.toList()).toByteArray())
                 zos.closeEntry()
                 for ((path, e) in entries) {
                     zos.putNextEntry(ZipEntry(path))
