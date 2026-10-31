@@ -14,6 +14,8 @@ data class Control(
     var modes: List<String> = emptyList(),
     var kind: String = "builtin",
     var value: String = "",
+    /** Встроенная пиксельная иконка вместо подписи ("" — рисовать подпись). */
+    var icon: String = "",
 )
 
 /** Профили экранного управления: формат совпадает с тем, что читает игра. */
@@ -22,6 +24,14 @@ object TouchProfiles {
     val builtins = listOf(
         "jump", "sneak", "sprint", "inventory", "pause", "view", "mode", "debug", "chat", "lock", "attack",
     )
+
+    /** Иконки, которые умеет рисовать движок (см. ci/touch_layout.rs). */
+    val icons = listOf(
+        "", "jump", "sneak", "sprint", "attack", "inventory",
+        "chat", "pause", "view", "mode", "debug", "lock",
+    )
+
+    fun iconTitle(icon: String): String = if (icon.isBlank()) I18n.t("подпись") else icon
 
     fun kindTitle(kind: String): String = I18n.t(
         when (kind) {
@@ -37,19 +47,54 @@ object TouchProfiles {
     fun dir(prefs: Prefs) = File(prefs.home, "touch/profiles")
     fun activeFile(prefs: Prefs) = File(prefs.home, "touch/active.txt")
 
-    fun defaults(): List<Control> = listOf(
-        Control("jump", "Jump", 0.95f, 0.89f, 22f),
-        Control("sneak", "Sneak", 0.83f, 0.94f, 15f),
-        Control("sprint", "Run", 0.83f, 0.83f, 15f),
-        Control("inventory", "...", 0.65f, 0.97f, 10f),
-        Control("pause", "II", 0.97f, 0.04f, 11f),
-        Control("view", "F5", 0.91f, 0.04f, 11f),
-        Control("mode", "Tap", 0.85f, 0.04f, 11f),
-        Control("debug", "F3", 0.79f, 0.04f, 11f),
-        Control("chat", "Chat", 0.50f, 0.04f, 12f),
-        Control("lock", "Lock", 0.30f, 0.95f, 11f),
-        Control("attack", "Hit", 0.67f, 0.50f, 24f, modes = listOf("aim")),
+    fun defaults(): List<Control> = presets().first().second
+
+    /**
+     * Встроенные раскладки в духе Minecraft Bedrock: джойстик и хотбар рисует игра,
+     * здесь — кнопки. `x`/`y` — доля экрана, `r` — радиус в игровых единицах.
+     */
+    fun presets(): List<Pair<String, List<Control>>> = listOf(
+        "Bedrock" to listOf(
+            Control("jump", "Jump", 0.77f, 0.63f, 21f, icon = "jump"),
+            Control("sneak", "Sneak", 0.77f, 0.76f, 14f, icon = "sneak"),
+            Control("sprint", "Run", 0.67f, 0.41f, 14f, icon = "sprint"),
+            Control("attack", "Hit", 0.67f, 0.55f, 20f, modes = listOf("aim"), icon = "attack"),
+            Control("inventory", "...", 0.375f, 0.05f, 10f, icon = "inventory"),
+            Control("chat", "Chat", 0.425f, 0.05f, 10f, icon = "chat"),
+            Control("pause", "II", 0.475f, 0.05f, 10f, icon = "pause"),
+        ),
+        "Bedrock (левая рука)" to listOf(
+            Control("jump", "Jump", 0.23f, 0.63f, 21f, icon = "jump"),
+            Control("sneak", "Sneak", 0.23f, 0.76f, 14f, icon = "sneak"),
+            Control("sprint", "Run", 0.33f, 0.41f, 14f, icon = "sprint"),
+            Control("attack", "Hit", 0.33f, 0.55f, 20f, modes = listOf("aim"), icon = "attack"),
+            Control("inventory", "...", 0.625f, 0.05f, 10f, icon = "inventory"),
+            Control("chat", "Chat", 0.575f, 0.05f, 10f, icon = "chat"),
+            Control("pause", "II", 0.525f, 0.05f, 10f, icon = "pause"),
+        ),
+        "Bedrock + отладка" to (
+            listOf(
+                Control("jump", "Jump", 0.77f, 0.63f, 21f, icon = "jump"),
+                Control("sneak", "Sneak", 0.77f, 0.76f, 14f, icon = "sneak"),
+                Control("sprint", "Run", 0.67f, 0.41f, 14f, icon = "sprint"),
+                Control("attack", "Hit", 0.67f, 0.55f, 20f, modes = listOf("aim"), icon = "attack"),
+                Control("inventory", "...", 0.375f, 0.05f, 10f, icon = "inventory"),
+                Control("chat", "Chat", 0.425f, 0.05f, 10f, icon = "chat"),
+                Control("pause", "II", 0.475f, 0.05f, 10f, icon = "pause"),
+                Control("view", "F5", 0.06f, 0.06f, 9f, icon = "view"),
+                Control("mode", "Tap", 0.13f, 0.06f, 9f, icon = "mode"),
+                Control("debug", "F3", 0.20f, 0.06f, 9f, icon = "debug"),
+                Control("lock", "Lock", 0.27f, 0.93f, 10f, icon = "lock"),
+            )
+        ),
     )
+
+    /** Ставит встроенный профиль в папку игры (перезаписывая файл с тем же именем). */
+    fun installPreset(prefs: Prefs, name: String, controls: List<Control>) {
+        val file = File(dir(prefs), name.replace(' ', '-').lowercase() + ".json")
+        write(file, name, controls)
+        setActive(prefs, file.nameWithoutExtension)
+    }
 
     fun read(file: File): List<Control> = runCatching {
         val root = JSONObject(file.readText())
@@ -69,6 +114,7 @@ object TouchProfiles {
                 (0 until arr.length()).map { arr.optString(it) }
             } ?: emptyList()
             Control(
+                icon = o.optString("icon", ""),
                 id = o.optString("id", ""),
                 label = o.optString("label", ""),
                 x = o.optDouble("x", 0.5).toFloat(),
@@ -87,6 +133,7 @@ object TouchProfiles {
             val o = JSONObject()
             o.put("id", c.id.ifBlank { "btn_" + (1000..9999).random() })
             if (c.label.isNotBlank()) o.put("label", c.label)
+            if (c.icon.isNotBlank()) o.put("icon", c.icon)
             o.put("x", (c.x * 1000).toInt() / 1000.0)
             o.put("y", (c.y * 1000).toInt() / 1000.0)
             o.put("r", c.r.toDouble())
