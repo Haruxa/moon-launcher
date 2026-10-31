@@ -353,7 +353,7 @@ fun BuildScreen(prefs: Prefs) {
                         progress = { p -> progress = p },
                     )
                     runCatching { builder.build(emptyList()) }
-                        .onFailure { lines = lines + I18n.t("Ошибка: ") + it.message }
+                        .onFailure { lines = lines + I18n.t("Ошибка: ") + (it.message ?: "") }
                     running = false
                 }
             }
