@@ -170,6 +170,9 @@ object I18n {
         "Долго не приходит подтверждение? Скопируй код вручную, открой ссылку и введи его сам." to
             "No confirmation for a while? Copy the code manually, open the link and enter it yourself.",
         "Понятно" to "Got it",
+        "Повторить" to "Retry",
+        "Нет сети — пробую снова…" to "No network — retrying…",
+        "Токен сохранён, но имя профиля не прочитано" to "Token saved, but the profile name could not be read",
         "Ссылка на выбранный репозиторий и команда клонирования" to "Link to the selected repository and the clone command",
         "Репозиторий не выбран" to "No repository selected",
         "Копировать" to "Copy",
