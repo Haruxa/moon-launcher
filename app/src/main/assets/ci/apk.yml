@@ -31,7 +31,7 @@ on:
         required: false
         default: ""
       home_on_sdcard:
-        description: "Папка игры в /sdcard/MargyMC/horizon (моды и миры видны файловому менеджеру)"
+        description: "Папка игры в /sdcard/MoonMC/horizon (моды и миры видны файловому менеджеру)"
         type: boolean
         default: true
       native_pin:
@@ -44,6 +44,10 @@ on:
         default: "0d6b103c70633d8fd9443d8d0acd3aadaacedb06"
       mod_urls:
         description: "Ссылки на .hnmod через пробел (только при native_pin)"
+        required: false
+        default: ""
+      native_mods:
+        description: "Какие бандлы ci/bundles/*.hnmod вшить (через запятую; пусто = все)"
         required: false
         default: ""
 
@@ -203,17 +207,57 @@ jobs:
         run: |
           mkdir -p src/ci
           fetch() {
+            mkdir -p "src/ci/$(dirname "$1")"
             gh api "repos/${{ github.repository }}/contents/ci/$1?ref=${{ github.sha }}" \
               -H "Accept: application/vnd.github.raw" > "src/ci/$1"
             printf '   %s: %s строк\n' "$1" "$(wc -l < "src/ci/$1")"
           }
           fetch build-apk-modded.sh
           fetch patch-game-home.py
+          fetch patch-touch.py
+          fetch patch-branding.py
+          fetch touch_layout.rs
+          # все бандлы .hnmod: какие собирать, выбирает лаунчер (input native_mods)
+          mkdir -p src/ci/bundles ci/bundles
+          gh api "repos/${{ github.repository }}/git/trees/${{ github.sha }}?recursive=1" \
+            --jq '.tree[] | select(.type=="blob") | select(.path|startswith("ci/bundles/")) | select(.path|endswith(".hnmod")) | .path' \
+            | while read -r p; do
+            mkdir -p "src/$(dirname "$p")"
+            gh api "repos/${{ github.repository }}/contents/$p?ref=${{ github.sha }}" \
+              -H "Accept: application/vnd.github.raw" > "src/$p"
+            cp "src/$p" "$p"
+          done
+          echo "   бандлы: $(find src/ci/bundles -name '*.hnmod' | wc -l) файлов: $(ls src/ci/bundles | tr '\n' ' ')"
+          # экран первой загрузки MoonMC (java рисуется кодом)
+          mkdir -p src/ci/splash
+          gh api "repos/${{ github.repository }}/git/trees/${{ github.sha }}?recursive=1" \
+            --jq '.tree[] | select(.type=="blob") | select(.path|startswith("ci/splash/")) | .path' \
+            | while read -r p; do
+            mkdir -p "src/$(dirname "$p")"
+            gh api "repos/${{ github.repository }}/contents/$p?ref=${{ github.sha }}" \
+              -H "Accept: application/vnd.github.raw" > "src/$p"
+          done
+          echo "   экран загрузки: $(find src/ci/splash -name '*.java' | wc -l) файлов"
+          # иконки и adaptive-xml для брендинга MoonMC: обходим дерево рекурсивно
+          # (contents API по каталогу отдаёт JSON-листинг, а не файл)
+          mkdir -p src/ci/branding
+          gh api "repos/${{ github.repository }}/git/trees/${{ github.sha }}?recursive=1" \
+            --jq '.tree[] | select(.type=="blob") | select(.path|startswith("ci/branding/")) | .path' \
+            | while read -r p; do
+            mkdir -p "src/$(dirname "$p")"
+            gh api "repos/${{ github.repository }}/contents/$p?ref=${{ github.sha }}" \
+              -H "Accept: application/vnd.github.raw" > "src/$p"
+          done
+          echo "   branding: $(find src/ci/branding -type f | wc -l) файлов, png: $(find src/ci/branding -name '*.png' | wc -l)"
 
       - name: "Патч: папка игры на /sdcard"
         if: inputs.home_on_sdcard
         working-directory: src
         run: python3 ci/patch-game-home.py
+
+      - name: "Патч: имя и иконка MoonMC (Material You)"
+        working-directory: src
+        run: python3 ci/patch-branding.py
 
       - name: Rust + цель aarch64-linux-android
         run: |
@@ -255,16 +299,40 @@ jobs:
           ls -l target/release/ | grep -i mixins
 
       - name: Скачать нативные моды
-        if: inputs.native_pin != ''
+        if: inputs.native_pin != '' && inputs.native_mods != 'none'
         run: |
           mkdir -p mods.incoming
           i=0
+          # Без ссылок берём бандлы из своего дерева (ci/bundles/*.hnmod) — приватный
+          # репозиторий нельзя скачать обычным curl.
+          if [ -z "${{ inputs.mod_urls }}" ]; then
+            wanted="$(printf '%s' "${{ inputs.native_mods }}" | tr ',' ' ')"
+            if [ "$wanted" = "none" ]; then
+              echo "  нативные бандлы не выбраны — собираю без модов"
+              exit 0
+            fi
+            for f in src/ci/bundles/*.hnmod ci/bundles/*.hnmod; do
+              [ -e "$f" ] || continue
+              # выбор лаунчера: имя бандла без расширения в списке (пусто = все)
+              name=$(basename "$f" .hnmod)
+              if [ -n "$wanted" ]; then
+                case " $wanted " in
+                  *" $name "*) ;;
+                  *) echo "  пропускаю $name (не выбран)"; continue ;;
+                esac
+              fi
+              i=$((i+1))
+              mkdir -p "mods.incoming/mod$i"
+              unzip -o -q "$f" -d "mods.incoming/mod$i"
+              echo "  мод $i (бандл): $f, $(find "mods.incoming/mod$i" -name 'horizon-mixin.toml' | wc -l) манифест(ов)"
+            done
+          fi
           for u in ${{ inputs.mod_urls }}; do
             i=$((i+1))
             curl -fsSL --retry 3 -o "/tmp/mod$i.hnmod" "$u"
             mkdir -p "mods.incoming/mod$i"
             unzip -o -q "/tmp/mod$i.hnmod" -d "mods.incoming/mod$i"
-            echo "  мод $i: $(find mods.incoming/mod$i -name 'horizon-mixin.toml' | wc -l) манифест(ов)"
+            echo "  мод $i: $(find "mods.incoming/mod$i" -name 'horizon-mixin.toml' | wc -l) манифест(ов)"
           done
           # horizon-mixins не рекурсирует по каталогам: раскладываем все моды в одну папку
           mkdir -p mods.incoming/mixins
@@ -275,7 +343,7 @@ jobs:
           test "$i" -gt 0
 
       - name: Вшить моды в дерево
-        if: inputs.native_pin != ''
+        if: inputs.native_pin != '' && inputs.native_mods != 'none'
         run: |
           set -euo pipefail
           . "$HOME/.cargo/env"
@@ -306,6 +374,9 @@ jobs:
           FIXED=$(grep -c 'horizon_client::event_loop::new()' "src-out/$GAME" || true)
           echo "== EventLoop::new() осталось: $LEFT, через хелпер: $FIXED"
           test "$LEFT" = "0"
+          # Профили экранного управления: раскладка кнопок из JSON (touch/profiles/*.json).
+          ( cd src-out && python3 ../src/ci/patch-touch.py ../src/ci/touch_layout.rs )
+          grep -n 'mod touch_layout' "src-out/$GAME" | head -2
           cp -a src/.local src-out/.local
           echo "== вшитые файлы: $(ls src-out/crates/horizon-client/src/game/ | grep -c official || true)"
           rm -rf src && mv src-out src
