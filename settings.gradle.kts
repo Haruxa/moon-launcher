@@ -11,5 +11,5 @@ dependencyResolutionManagement {
         mavenCentral()
     }
 }
-rootProject.name = "MargyMC Launcher"
+rootProject.name = "Moon"
 include(":app")
