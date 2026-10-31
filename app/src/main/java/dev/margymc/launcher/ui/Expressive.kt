@@ -1,24 +1,101 @@
 package dev.margymc.launcher.ui
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonColors
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.GenericShape
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.clipRect
+import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.graphics.shapes.RoundedPolygon
+import kotlin.math.PI
+import kotlin.math.cos
+import kotlin.math.sin
 
-/** Крупный «expressive» заголовок экрана. */
+/**
+ * Формы M3 Expressive («cookie», «sunny»). Рисуем сами: в стабильном
+ * material3 1.4.0 нет набора MaterialShapes, а бета-версия требует AGP 9.1.
+ */
+enum class Morf { Circle, Cookie9, Cookie12, Sunny }
+
+/**
+ * Замкнутый «печеньковый» контур: вершины чередуются между внешним радиусом
+ * и внутренним (0..0.5 от размера), между ними — квадратичные сглаживания.
+ */
+fun blobPath(width: Float, height: Float, lobes: Int, inner: Float, rotation: Float = 0f): Path {
+    val path = Path()
+    val steps = lobes * 2
+    val cx = width / 2f
+    val cy = height / 2f
+    val points = ArrayList<Offset>(steps)
+    for (i in 0 until steps) {
+        val angle = -PI / 2 + rotation + i * 2.0 * PI / steps
+        val r = if (i % 2 == 0) 0.5 else 0.5 * inner
+        points.add(
+            Offset(
+                (cx + r * width * cos(angle)).toFloat(),
+                (cy + r * height * sin(angle)).toFloat(),
+            )
+        )
+    }
+    path.moveTo(points[0].x, points[0].y)
+    for (i in 0 until steps) {
+        val cur = points[i]
+        val next = points[(i + 1) % steps]
+        path.quadraticBezierTo(cur.x, cur.y, (cur.x + next.x) / 2f, (cur.y + next.y) / 2f)
+    }
+    path.close()
+    return path
+}
+
+fun morfShape(kind: Morf): Shape = when (kind) {
+    Morf.Circle -> RoundedCornerShape(percent = 50)
+    Morf.Cookie9 -> GenericShape { size, _ -> addPath(blobPath(size.width, size.height, 9, 0.86f)) }
+    Morf.Cookie12 -> GenericShape { size, _ -> addPath(blobPath(size.width, size.height, 12, 0.92f, 0.13f)) }
+    Morf.Sunny -> GenericShape { size, _ -> addPath(blobPath(size.width, size.height, 16, 0.80f)) }
+}
+
+/** Крупный заголовок экрана. */
 @Composable
 fun ScreenHeader(title: String, subtitle: String? = null, modifier: Modifier = Modifier) {
     Column(modifier.fillMaxWidth().padding(bottom = 4.dp)) {
-        Text(title, style = MaterialTheme.typography.headlineMedium)
+        Text(title, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.SemiBold)
         if (subtitle != null) {
             Text(
                 subtitle,
@@ -29,57 +106,50 @@ fun ScreenHeader(title: String, subtitle: String? = null, modifier: Modifier = M
     }
 }
 
-/** Карточка с морфной формой Material 3 Expressive. */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+/** Карточка с морфной формой. */
 @Composable
 fun ShapeCard(
     modifier: Modifier = Modifier,
-    polygon: RoundedPolygon? = MaterialShapes.Cookie9Sided,
+    polygon: Morf = Morf.Cookie9,
     containerColor: Color = MaterialTheme.colorScheme.surfaceContainerHigh,
-    contentPadding: Dp = 16.dp,
+    contentPadding: Dp = 18.dp,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    val shape: Shape = polygon?.asShape() ?: RoundedCornerShape(24.dp)
     Surface(
         modifier = modifier.fillMaxWidth(),
-        shape = shape,
+        shape = morfShape(polygon),
         color = containerColor,
-        tonalElevation = 1.dp,
-    ) {
-        Column(Modifier.padding(contentPadding), content = content)
-    }
+        content = { Column(Modifier.padding(contentPadding), content = content) },
+    )
 }
 
-/** Кнопка-действие с морфной формой и крупной типографикой. */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+/** Кнопка-действие: пилюля, крупная зона нажатия. */
 @Composable
 fun ExpressiveButton(
     text: String,
     icon: ImageVector? = null,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
-    polygon: RoundedPolygon? = MaterialShapes.Cookie9Sided,
     colors: ButtonColors = ButtonDefaults.buttonColors(),
     onClick: () -> Unit,
 ) {
-    val shape = polygon?.asShape() ?: RoundedCornerShape(28.dp)
     Button(
         onClick = onClick,
         modifier = modifier.heightIn(min = 56.dp),
         enabled = enabled,
-        shape = shape,
+        shape = RoundedCornerShape(percent = 50),
         colors = colors,
-        contentPadding = PaddingValues(horizontal = 26.dp, vertical = 14.dp),
+        contentPadding = PaddingValues(horizontal = 24.dp, vertical = 14.dp),
     ) {
         if (icon != null) {
-            Icon(icon, contentDescription = null, modifier = Modifier.size(22.dp))
-            Spacer(Modifier.width(10.dp))
+            Icon(icon, contentDescription = null, modifier = Modifier.size(20.dp))
+            Spacer(Modifier.width(8.dp))
         }
         Text(text, style = MaterialTheme.typography.titleMedium)
     }
 }
 
-/** Маленький статусный «жвачок» (чип). */
+/** Статусная «жвачка». */
 @Composable
 fun StatusPill(
     text: String,
@@ -87,7 +157,7 @@ fun StatusPill(
     contentColor: Color = MaterialTheme.colorScheme.onSecondaryContainer,
     modifier: Modifier = Modifier,
 ) {
-    Surface(shape = RoundedCornerShape(999.dp), color = containerColor, modifier = modifier) {
+    Surface(shape = RoundedCornerShape(percent = 50), color = containerColor, modifier = modifier) {
         Text(
             text,
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
@@ -97,29 +167,65 @@ fun StatusPill(
     }
 }
 
-/** Волнистый индикатор прогресса — фирменная деталь Expressive. */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+/** Волнистый прогресс. */
 @Composable
 fun WaveProgress(progress: () -> Float, modifier: Modifier = Modifier) {
-    LinearWavyProgressIndicator(
-        progress = { progress().coerceIn(0f, 1f) },
-        modifier = modifier.fillMaxWidth(),
-        color = MaterialTheme.colorScheme.primary,
-        trackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-        gapSize = 0.dp,
-        stopSize = 4.dp,
+    val color = MaterialTheme.colorScheme.primary
+    val track = MaterialTheme.colorScheme.surfaceContainerHighest
+    val transition = rememberInfiniteTransition(label = "wave")
+    val phase by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(1600, easing = LinearEasing), RepeatMode.Restart),
+        label = "phase",
     )
+    Canvas(modifier.fillMaxWidth().height(14.dp)) {
+        val w = size.width
+        val mid = size.height / 2f
+        val amp = size.height * 0.28f
+        val stroke = 6.dp.toPx()
+        drawLine(track, Offset(0f, mid), Offset(w, mid), strokeWidth = stroke, cap = StrokeCap.Round)
+        val done = progress().coerceIn(0f, 1f) * w
+        if (done <= 1f) return@Canvas
+        clipRect(right = done) {
+            val path = Path()
+            var x = 0f
+            path.moveTo(0f, mid)
+            while (x <= w) {
+                val y = mid + amp * sin((x / w * 3f + phase) * 2f * PI.toFloat())
+                path.lineTo(x, y)
+                x += 6f
+            }
+            drawPath(path, color, style = Stroke(width = stroke, cap = StrokeCap.Round))
+        }
+    }
 }
 
-/** Морфный индикатор загрузки (LoadingIndicator из M3 Expressive). */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+/** Морфный лоадер: вращающаяся пульсирующая «печенька». */
 @Composable
 fun MorphLoading(modifier: Modifier = Modifier) {
-    LoadingIndicator(modifier = modifier.size(36.dp))
+    val color = MaterialTheme.colorScheme.primary
+    val transition = rememberInfiniteTransition(label = "morph")
+    val spin by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(tween(1500, easing = LinearEasing), RepeatMode.Restart),
+        label = "spin",
+    )
+    val pulse by transition.animateFloat(
+        initialValue = 0.84f,
+        targetValue = 0.94f,
+        animationSpec = infiniteRepeatable(tween(700), RepeatMode.Reverse),
+        label = "pulse",
+    )
+    Canvas(modifier.size(36.dp)) {
+        rotate(spin) {
+            drawPath(blobPath(size.width, size.height, 6, pulse), color)
+        }
+    }
 }
 
-/** Строка «идёт работа» с морфным индикатором. */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+/** Строка «идёт работа». */
 @Composable
 fun LoadingRow(text: String, modifier: Modifier = Modifier) {
     Row(
@@ -127,18 +233,17 @@ fun LoadingRow(text: String, modifier: Modifier = Modifier) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        LoadingIndicator(modifier = Modifier.size(28.dp))
+        MorphLoading(Modifier.size(24.dp))
         Text(text, style = MaterialTheme.typography.bodyMedium)
     }
 }
 
-/** Заголовок секции внутри экрана. */
+/** Заголовок секции. */
 @Composable
 fun SectionTitle(text: String, modifier: Modifier = Modifier) {
     Text(
         text,
         modifier = modifier.padding(top = 8.dp, bottom = 4.dp),
         style = MaterialTheme.typography.titleMedium,
-        fontWeight = FontWeight.SemiBold,
     )
 }
