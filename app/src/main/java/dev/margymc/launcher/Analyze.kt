@@ -35,9 +35,14 @@ object Analyze {
     ) {
         val detail: String
             get() = buildString {
-                append("${classes} классов · ${assets + dataFiles} файлов данных")
-                if (mixins) append(" · миксины")
-                if (natives > 0) append(" · $natives бинарников")
+                append(
+                    I18n.pick(
+                        "$classes classes · ${assets + dataFiles} data files",
+                        "$classes классов · ${assets + dataFiles} файлов данных",
+                    )
+                )
+                if (mixins) append(I18n.pick(" · mixins", " · миксины"))
+                if (natives > 0) append(I18n.pick(" · $natives binaries", " · $natives бинарников"))
             }
     }
 
