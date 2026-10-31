@@ -19,7 +19,12 @@ class Builder(
     private val token get() = prefs.token
     private val repo get() = prefs.repo
 
-    suspend fun build(modUrls: List<String>, nativePin: String? = null, mixinsRev: String? = null) {
+    suspend fun build(
+        modUrls: List<String>,
+        nativePin: String? = null,
+        mixinsRev: String? = null,
+        bundles: List<String> = emptyList(),
+    ) {
         require(token.isNotBlank()) { "нет токена GitHub" }
         progress(null); log("Проверяю доступ к GitHub…")
         Github.whoami(token)
@@ -34,7 +39,13 @@ class Builder(
         runCatching { uploadRecipe() }.onFailure { log("рецепты уже в репозитории: ${it.message}") }
         progress(0.02f)
 
-        log("Запускаю сборку (${modUrls.size} нативных мод(ов))…")
+        log("Запускаю сборку (${bundles.size} бандл(ов) .hnmod)…")
+        // native_mods: имена бандлов из ci/bundles без расширения; "none" — собрать без модов
+        val nativeMods = when {
+            bundles.isNotEmpty() -> bundles.joinToString(",")
+            modUrls.isEmpty() -> "none"
+            else -> ""
+        }
         Github.dispatch(
             token, prefs.repo, "apk.yml",
             mapOf(
@@ -44,6 +55,7 @@ class Builder(
                 "native_pin" to (nativePin ?: ""),
                 "mixins_rev" to (mixinsRev ?: ""),
                 "mod_urls" to modUrls.joinToString("\n"),
+                "native_mods" to nativeMods,
             ),
         )
 
@@ -73,6 +85,11 @@ class Builder(
         Github.putFile(token, repo, ".github/workflows/apk.yml", text("apk.yml"), "рецепт сборки")
         Github.putFile(token, repo, "ci/build-apk-modded.sh", text("build-apk-modded.sh"), "скрипт сборки")
         Github.putFile(token, repo, "ci/patch-game-home.py", text("patch-game-home.py"), "патч папки игры")
+        Github.putFile(token, repo, "ci/patch-branding.py", text("patch-branding.py"), "брендинг MoonMC")
+        Github.putFile(
+            token, repo, "ci/splash/MoonSplash.java",
+            text("splash/MoonSplash.java"), "экран первой загрузки MoonMC",
+        )
     }
 
     private suspend fun awaitRun(): Long {
