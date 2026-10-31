@@ -33,6 +33,11 @@ class Builder(
             // рецепты сборки и архив Minecraft уже лежат в этом приватном репозитории
             prefs.repo = "Haruxa/moonmc-apk"
         }
+        // репозиторий могли переименовать: старый путь отвечает 404 — возвращаемся к нашему
+        if (!Github.repoExists(token, prefs.repo)) {
+            log("Репозиторий ${prefs.repo} не найден — беру Haruxa/moonmc-apk")
+            prefs.repo = "Haruxa/moonmc-apk"
+        }
         log("Репозиторий: ${prefs.repo}")
 
         log("Обновляю рецепты сборки…")
