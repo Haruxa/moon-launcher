@@ -43,6 +43,15 @@ object Github {
 
     data class Run(val id: Long, val status: String, val conclusion: String?)
 
+    /** Есть ли такой репозиторий и доступен ли он этому токену. */
+    fun repoExists(token: String, repo: String): Boolean =
+        try {
+            Http.request("$API/repos/$repo", null, token)
+            true
+        } catch (e: Exception) {
+            !e.message.orEmpty().contains("404")
+        }
+
     /** Файл в каталоге репозитория. */
     data class Entry(val name: String, val size: Long, val sha: String)
 
