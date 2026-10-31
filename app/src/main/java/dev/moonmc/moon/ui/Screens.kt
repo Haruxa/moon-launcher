@@ -140,14 +140,16 @@ fun HorizonScreen(prefs: Prefs) {
                         val inList = id != null && buildEntries.any { it.id == id }
                         val analysis = v?.let { analyses[p.id] }
                         analysis?.let {
-                            StatusPill(
-                                I18n.t(it.summary),
-                                if (it.verdict == NativeAnalyze.Verdict.OK)
-                                    MaterialTheme.colorScheme.secondaryContainer
-                                else MaterialTheme.colorScheme.errorContainer,
-                                if (it.verdict == NativeAnalyze.Verdict.OK)
-                                    MaterialTheme.colorScheme.onSecondaryContainer
-                                else MaterialTheme.colorScheme.onErrorContainer,
+                            // Компактно: длинная строка раздувала карточку — только 2 строки.
+                            Text(
+                                it.summary,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = if (it.verdict == NativeAnalyze.Verdict.OK)
+                                    MaterialTheme.colorScheme.primary
+                                else MaterialTheme.colorScheme.error,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.widthIn(max = 320.dp),
                             )
                         }
                         if (v != null) {
