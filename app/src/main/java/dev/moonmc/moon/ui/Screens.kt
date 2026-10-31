@@ -334,6 +334,24 @@ fun BuildScreen(prefs: Prefs) {
     var note by remember { mutableStateOf<String?>(null) }
     var pin by remember { mutableStateOf(prefs.nativePin) }
 
+    // библиотека ночников Horizon: пин -> дата Nightly, «новее/старее»
+    var nightlies by remember { mutableStateOf<List<Engine.Nightly>>(emptyList()) }
+    var engineBusy by remember { mutableStateOf(false) }
+    var engineError by remember { mutableStateOf<String?>(null) }
+    var showNewer by remember { mutableStateOf(false) }
+    var engineNote by remember { mutableStateOf<String?>(null) }
+
+    fun loadNightlies() {
+        scope.launch {
+            engineBusy = true
+            engineError = null
+            runCatching {
+                withContext(Dispatchers.IO) { Engine.nightlies(prefs.token.ifBlank { null }) }
+            }.onSuccess { nightlies = it }.onFailure { engineError = it.message }
+            engineBusy = false
+        }
+    }
+
     val repo = prefs.repo.ifBlank { "Haruxa/moonmc-apk" }
     val enabled = entries.filter { it.enabled }
     val pins = BuildList.distinctPins(entries)
@@ -385,7 +403,7 @@ fun BuildScreen(prefs: Prefs) {
         }
     }
 
-    LaunchedEffect(Unit) { loadBundles() }
+    LaunchedEffect(Unit) { loadBundles(); loadNightlies() }
     // пин движка подтягиваем из выбранных модов, если он у них один
     LaunchedEffect(entries) {
         val common = BuildList.commonPin(entries)
@@ -572,6 +590,90 @@ fun BuildScreen(prefs: Prefs) {
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+            }
+        }
+
+        item {
+            ShapeCard {
+                Text(I18n.t("Движок"), style = MaterialTheme.typography.titleMedium)
+                Text(
+                    Engine.label(pin, nightlies),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                val newer = Engine.newerThan(pin, nightlies)
+                if (engineBusy) {
+                    Spacer(Modifier.height(8.dp))
+                    LoadingRow(I18n.t("Читаю ночники…"))
+                }
+                engineError?.let {
+                    Spacer(Modifier.height(6.dp))
+                    Text(it, style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error)
+                }
+                engineNote?.let {
+                    Spacer(Modifier.height(6.dp))
+                    StatusPill(it)
+                }
+                if (!engineBusy && nightlies.isNotEmpty()) {
+                    Spacer(Modifier.height(6.dp))
+                    if (newer.isEmpty()) {
+                        Text(
+                            I18n.t("Пин на самом свежем ночнике"),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    } else {
+                        Text(
+                            I18n.t("Новее есть: ") + newer.size,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        if (showNewer) {
+                            newer.forEach { nightly ->
+                                Row(
+                                    Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    Column(Modifier.weight(1f)) {
+                                        Text(nightly.label,
+                                            style = MaterialTheme.typography.bodyMedium)
+                                    }
+                                    ExpressiveButton(I18n.t("Поставить"), Icons.Rounded.Check) {
+                                        scope.launch {
+                                            runCatching {
+                                                withContext(Dispatchers.IO) {
+                                                    Engine.resolve(
+                                                        prefs.token.ifBlank { null },
+                                                        nightly.sha,
+                                                    )
+                                                }
+                                            }.onSuccess { full ->
+                                                pin = full
+                                                prefs.nativePin = full
+                                                engineNote =
+                                                    I18n.t("Пин движка: ") + nightly.label
+                                            }.onFailure {
+                                                engineNote = I18n.t("Ошибка: ") + it.message
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        Spacer(Modifier.height(6.dp))
+                        ExpressiveButton(
+                            text = if (showNewer) I18n.t("Скрыть") else I18n.t("Проверить новее"),
+                            icon = Icons.Rounded.Refresh,
+                        ) { showNewer = !showNewer }
+                    }
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        I18n.t("Ночник — это main плюс неотревьюенные PR: бери, когда нужен мод или фикс под него"),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
         }
 
