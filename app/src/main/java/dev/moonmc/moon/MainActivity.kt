@@ -73,7 +73,8 @@ fun App(prefs: Prefs) {
             containerColor = MaterialTheme.colorScheme.surfaceContainer,
             header = { Spacer(Modifier.height(14.dp)) },
         ) {
-            Tab.entries.forEach { t ->
+            Tab.entries.forEachIndexed { index, t ->
+                if (index > 0) Spacer(Modifier.height(6.dp))
                 NavigationRailItem(
                     selected = tab == t,
                     onClick = { tab = t },
@@ -89,7 +90,11 @@ fun App(prefs: Prefs) {
             }
         }
         VerticalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
-        Box(Modifier.weight(1f).fillMaxHeight()) {
+        Surface(
+            modifier = Modifier.weight(1f).fillMaxHeight(),
+            color = MaterialTheme.colorScheme.background,
+            contentColor = MaterialTheme.colorScheme.onBackground,
+        ) {
             when (tab) {
                 Tab.HORIZON -> HorizonScreen(prefs)
                 Tab.MODRINTH -> ModrinthScreen(prefs)
