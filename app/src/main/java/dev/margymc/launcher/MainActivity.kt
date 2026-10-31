@@ -8,6 +8,7 @@ import android.os.Environment
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Build
@@ -65,14 +66,10 @@ private enum class Tab(val title: String, val icon: ImageVector) {
 fun App(prefs: Prefs) {
     var tab by remember { mutableStateOf(Tab.HORIZON) }
 
-    Row(Modifier.fillMaxSize()) {
+    Row(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         NavigationRail(
             containerColor = MaterialTheme.colorScheme.surfaceContainer,
-            header = {
-                Spacer(Modifier.height(6.dp))
-                Icon(Icons.Rounded.AutoAwesomeMotion, null, tint = MaterialTheme.colorScheme.primary)
-                Spacer(Modifier.height(14.dp))
-            },
+            header = { Spacer(Modifier.height(14.dp)) },
         ) {
             Tab.entries.forEach { t ->
                 NavigationRailItem(
