@@ -162,4 +162,25 @@ class Prefs(ctx: Context) {
     val resourcePacksDir get() = File(home, "resourcepacks")
     val shaderPacksDir get() = File(home, "shaderpacks")
     val downloadsDir get() = File(home, "launcher")
+
+    /** Выбранные бандлы .hnmod (имена без расширения, через запятую). */
+    var nativeMods: String
+        get() = p.getString("native_mods", "") ?: ""
+        set(v) = p.edit().putString("native_mods", v).apply()
+
+    /** Пин движка для сборки с нативными модами. */
+    var nativePin: String
+        get() = p.getString("native_pin", DEFAULT_NATIVE_PIN) ?: DEFAULT_NATIVE_PIN
+        set(v) = p.edit().putString("native_pin", v).apply()
+
+    /** Ревизия horizon-mixins, которой вшиваются моды. */
+    var mixinsRev: String
+        get() = p.getString("mixins_rev", DEFAULT_MIXINS_REV) ?: DEFAULT_MIXINS_REV
+        set(v) = p.edit().putString("mixins_rev", v).apply()
+
+    companion object {
+        /** Пин из каталога Horizon для версии 2.0.0 (classic_zoom): проверен сборкой. */
+        const val DEFAULT_NATIVE_PIN = "6f8c7a0e5d531d3834c4d0be4659a1db8e7e5c2a"
+        const val DEFAULT_MIXINS_REV = "0d6b103c70633d8fd9443d8d0acd3aadaacedb06"
+    }
 }
