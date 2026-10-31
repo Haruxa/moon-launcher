@@ -91,6 +91,7 @@ class Builder(
         Github.putFile(token, repo, "ci/build-apk-modded.sh", text("build-apk-modded.sh"), "скрипт сборки")
         Github.putFile(token, repo, "ci/patch-game-home.py", text("patch-game-home.py"), "патч папки игры")
         Github.putFile(token, repo, "ci/patch-branding.py", text("patch-branding.py"), "брендинг MoonMC")
+        Github.putFile(token, repo, "ci/patch-package.py", text("patch-package.py"), "пакет MoonMC")
         Github.putFile(
             token, repo, "ci/splash/MoonSplash.java",
             text("splash/MoonSplash.java"), "экран первой загрузки MoonMC",
