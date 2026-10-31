@@ -39,6 +39,12 @@ object I18n {
             "Packs install as is; Java mods are ported as data into .hmod",
         "Поиск" to "Search",
         "нужен анализ" to "needs analysis",
+        "Иконка" to "Icon",
+        "подпись" to "label",
+        "Встроенные профили" to "Built-in profiles",
+        "Раскладки как в Bedrock: джойстик и хотбар рисует игра, кнопки — из профиля" to
+            "Bedrock-style layouts: the game draws the stick and the hotbar, the buttons come from the profile",
+        "Профиль поставлен: " to "Profile installed: ",
         "Анализ" to "Analyze",
         "В .hmod" to "To .hmod",
         "Ставить" to "Install",
