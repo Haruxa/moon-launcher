@@ -86,6 +86,25 @@ object I18n {
         "Коммит horizon" to "horizon commit",
         "Нативные моды жёстко привязаны к коммиту движка" to
             "Native mods are bound to the engine commit",
+        "В списке" to "In the list",
+        "В список сборки" to "Add to build list",
+        "убрано из списка" to "removed from the list",
+        "добавлено в список — собери на вкладке «Сборка»" to
+            "added to the list — build it in the “Build” tab",
+        "Список сборки" to "Build list",
+        "включено: " to "enabled: ",
+        "Пусто. Добавь мод из каталога («Моды» → «Нативные») или бандл ниже." to
+            "Empty. Add a mod from the catalogue (“Mods” → “Native”) or a bundle below.",
+        "выключен" to "disabled",
+        "выше" to "up",
+        "ниже" to "down",
+        "удалить" to "delete",
+        "Очистить список" to "Clear the list",
+        "Выбранные моды требуют разные пины движка: " to
+            "Selected mods need different engine pins: ",
+        "Бандлы в репозитории" to "Bundles in the repository",
+        "ci/bundles — файлы .hnmod, которые вшиваются на сборке" to
+            "ci/bundles — .hnmod files compiled into the APK",
         "Собирается…" to "Building…",
         "Собрать APK с выбранными модами" to "Build APK with selected mods",
         "Собрать APK с модами" to "Build APK with mods",
