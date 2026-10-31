@@ -6,7 +6,8 @@ plugins {
 
 android {
     namespace = "dev.margymc.launcher"
-    compileSdk = 36
+    // material3 1.5.0-beta02 (M3 Expressive) требует API 37
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "dev.margymc.launcher"
