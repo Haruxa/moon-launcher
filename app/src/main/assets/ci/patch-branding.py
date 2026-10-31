@@ -43,6 +43,8 @@ OLD_STATUS = '''    private android.app.AlertDialog status;
 '''
 
 NEW_STATUS = '''    private MoonSplash splash;
+    /** Идёт подготовка ресурсов: свёрнутое приложение должно вернуть экран загрузки. */
+    private boolean preparing;
 
     /** Called by the first start's preparing: its step on the MoonMC screen. */
     public void showStatus(final String text) {
@@ -50,12 +52,24 @@ NEW_STATUS = '''    private MoonSplash splash;
             if (isDestroyed() || isFinishing()) {
                 return;
             }
+            preparing = true;
             if (splash == null) {
                 splash = new MoonSplash(this);
                 splash.show();
             }
             splash.step(text);
         });
+    }
+
+    /** Свёрнутое приложение теряет поверхность: пока идёт подготовка, возвращаем экран. */
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (preparing && splash == null && !isFinishing()) {
+            splash = new MoonSplash(this);
+            splash.show();
+            splash.step("Preparing the game…");
+        }
     }
 '''
 
@@ -71,12 +85,25 @@ NEW_DISMISS = '''            if (splash != null) {
             }
 '''
 
+OLD_KEYBOARD = '''            if (show) {
+                input.reset();'''
+
+NEW_KEYBOARD = '''            if (splash != null) {
+                // игра просит клавиатуру — значит уже загрузилась, экран больше не нужен
+                splash.finishQuietly();
+                splash = null;
+                preparing = false;
+            }
+            if (show) {
+                input.reset();'''
+
 OLD_RESTART = '''    public void restart() {
         runOnUiThread(() -> {
 '''
 
 NEW_RESTART = '''    public void restart() {
         runOnUiThread(() -> {
+            preparing = false;
             if (splash != null) {
                 splash.finishQuietly();
                 splash = null;
@@ -154,11 +181,14 @@ def main() -> int:
             (OLD_STATUS, NEW_STATUS, "showStatus"),
             (OLD_DISMISS, NEW_DISMISS, "showChoice"),
             (OLD_RESTART, NEW_RESTART, "restart"),
+            (OLD_KEYBOARD, NEW_KEYBOARD, "setKeyboard"),
         ):
             if old not in code:
                 die(f"HorizonActivity.java: не нашёл блок {what}")
             code = code.replace(old, new, 1)
         code = code.replace('.setTitle("MargyMC")', '.setTitle("MoonMC")')
+        # остатки — только в комментариях и подсказках: /sdcard/MargyMC и старые заголовки
+        code = code.replace("MargyMC", "MoonMC")
         if "MargyMC" in code:
             die("HorizonActivity.java: остались упоминания MargyMC")
         open(ACTIVITY, "w").write(code)
