@@ -1,6 +1,8 @@
 package dev.moonmc.moon.ui
 
 import android.content.Context
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
@@ -306,6 +308,10 @@ fun ModrinthScreen(prefs: Prefs) {
 
 /* ---------------------------------- Сборка --------------------------------- */
 
+/**
+ * Сборка APK: список бандлов .hnmod (ci/bundles в приватном репозитории) с отметками,
+ * пин движка и кнопка запуска GitHub Actions. Выбранные моды вшиваются в игру на сборке.
+ */
 @Composable
 fun BuildScreen(prefs: Prefs) {
     val ctx = LocalContext.current
@@ -314,29 +320,172 @@ fun BuildScreen(prefs: Prefs) {
     var progress by remember { mutableStateOf<Float?>(null) }
     var running by remember { mutableStateOf(false) }
 
+    var bundles by remember { mutableStateOf<List<Github.Entry>>(emptyList()) }
+    var chosen by remember {
+        mutableStateOf(
+            prefs.nativeMods.split(',').map { it.trim() }.filter { it.isNotEmpty() }.toSet()
+        )
+    }
+    var listing by remember { mutableStateOf(false) }
+    var listError by remember { mutableStateOf<String?>(null) }
+    var pin by remember { mutableStateOf(prefs.nativePin) }
+    var note by remember { mutableStateOf<String?>(null) }
+
+    val repo = prefs.repo.ifBlank { "Haruxa/moonmc-apk" }
+
+    fun loadBundles() {
+        if (prefs.token.isBlank()) {
+            listError = I18n.t("Нужен токен GitHub — вкладка «Ещё»")
+            return
+        }
+        scope.launch {
+            listing = true
+            listError = null
+            runCatching {
+                withContext(Dispatchers.IO) {
+                    Github.listDir(prefs.token, repo, "ci/bundles")
+                        .filter { it.name.endsWith(".hnmod") }
+                }
+            }.onSuccess { bundles = it }.onFailure { listError = it.message }
+            listing = false
+        }
+    }
+
+    fun saveChosen() {
+        prefs.nativeMods = chosen.joinToString(",")
+    }
+
+    // Свой файл .hnmod: кладём в ci/bundles репозитория, дальше он как остальные
+    val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        scope.launch {
+            note = null
+            runCatching {
+                withContext(Dispatchers.IO) {
+                    var name = "mod.hnmod"
+                    ctx.contentResolver.query(uri, null, null, null, null)?.use { c ->
+                        val i = c.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
+                        if (i >= 0 && c.moveToFirst()) name = c.getString(i) ?: name
+                    }
+                    name = name.substringAfterLast('/').trim()
+                    if (!name.endsWith(".hnmod")) name = name.removeSuffix(".zip") + ".hnmod"
+                    val bytes = ctx.contentResolver.openInputStream(uri)!!.use { it.readBytes() }
+                    Github.putBytes(
+                        prefs.token, repo, "ci/bundles/$name", bytes, "мод: $name",
+                    )
+                    name
+                }
+            }.onSuccess { name ->
+                note = I18n.t("Добавлено: ") + name
+                chosen = chosen + name.removeSuffix(".hnmod")
+                saveChosen()
+                loadBundles()
+            }.onFailure { note = I18n.t("Ошибка: ") + (it.message ?: "") }
+        }
+    }
+
+    LaunchedEffect(Unit) { loadBundles() }
+
     LazyColumn(
         Modifier.fillMaxSize(),
         contentPadding = PaddingValues(PagePadding),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         item {
-            ScreenHeader(I18n.t("Сборка APK"), I18n.t("Нативные моды (.hnmod) вшиваются в игру в GitHub Actions"))
+            ScreenHeader(
+                I18n.t("Сборка APK"),
+                I18n.t("Нативные моды (.hnmod) вшиваются в игру в GitHub Actions"),
+            )
         }
         item {
-            ShapeCard() {
-                Text(I18n.t("Как это работает"), style = MaterialTheme.typography.titleMedium)
+            ShapeCard {
+                Text(I18n.t("Нативные моды (.hnmod)"),
+                    style = MaterialTheme.typography.titleMedium)
                 Text(
-                    "Лаунчер кладёт рецепт сборки в твой приватный репозиторий, запускает " +
-                        "GitHub Actions и через 20–40 минут присылает готовый APK. " +
-                        "На телефоне ничего не компилируется.",
-                    style = MaterialTheme.typography.bodyMedium,
+                    I18n.t("Отметь, что вшить в APK. Список — ci/bundles в репозитории сборки."),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                if (listing) {
+                    Spacer(Modifier.height(8.dp))
+                    LoadingRow(I18n.t("Читаю список…"))
+                }
+                listError?.let {
+                    Spacer(Modifier.height(6.dp))
+                    Text(it, style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error)
+                }
+                if (!listing && bundles.isEmpty() && listError == null) {
+                    Spacer(Modifier.height(6.dp))
+                    Text(I18n.t("В репозитории пока нет .hnmod"),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                bundles.forEach { entry ->
+                    val id = entry.name.removeSuffix(".hnmod")
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Checkbox(
+                            checked = id in chosen,
+                            onCheckedChange = { on ->
+                                chosen = if (on) chosen + id else chosen - id
+                                saveChosen()
+                            },
+                        )
+                        Column(Modifier.weight(1f)) {
+                            Text(id, style = MaterialTheme.typography.bodyLarge)
+                            Text(
+                                entry.name + " · " + (entry.size / 1024) + " " + I18n.t("КБ"),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                }
+                Spacer(Modifier.height(10.dp))
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    ExpressiveButton(I18n.t("Обновить список"), Icons.Rounded.Refresh) {
+                        loadBundles()
+                    }
+                    ExpressiveButton(I18n.t("Добавить .hnmod"), Icons.Rounded.Add) {
+                        if (prefs.token.isBlank()) {
+                            note = I18n.t("Нужен токен GitHub — вкладка «Ещё»")
+                        } else {
+                            picker.launch(arrayOf("*/*"))
+                        }
+                    }
+                    if (chosen.isNotEmpty()) {
+                        Text(I18n.t("Выбрано: ") + chosen.size,
+                            style = MaterialTheme.typography.bodySmall)
+                    }
+                }
+                note?.let {
+                    Spacer(Modifier.height(6.dp))
+                    StatusPill(it)
+                }
+            }
+        }
+        item {
+            ShapeCard {
+                Text(I18n.t("Пин движка"), style = MaterialTheme.typography.titleMedium)
+                OutlinedTextField(
+                    value = pin,
+                    onValueChange = { pin = it; prefs.nativePin = it.trim() },
+                    label = { Text(I18n.t("Коммит horizon")) },
+                    singleLine = true,
+                    shape = MaterialTheme.shapes.extraLarge,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    I18n.t("Нативные моды жёстко привязаны к коммиту движка"),
+                    style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
         item {
             ExpressiveButton(
-                text = if (running) I18n.t("Собирается…") else I18n.t("Собрать APK с модами"),
+                text = if (running) I18n.t("Собирается…") else I18n.t("Собрать APK с выбранными модами"),
                 icon = Icons.Rounded.Build,
                 enabled = !running,
             ) {
@@ -352,8 +501,14 @@ fun BuildScreen(prefs: Prefs) {
                         log = { msg -> lines = lines + msg },
                         progress = { p -> progress = p },
                     )
-                    runCatching { builder.build(emptyList()) }
-                        .onFailure { lines = lines + I18n.t("Ошибка: ") + (it.message ?: "") }
+                    runCatching {
+                        builder.build(
+                            modUrls = emptyList(),
+                            nativePin = pin.trim().takeIf { it.isNotEmpty() },
+                            mixinsRev = prefs.mixinsRev,
+                            bundles = chosen.toList().sorted(),
+                        )
+                    }.onFailure { lines = lines + I18n.t("Ошибка: ") + (it.message ?: "") }
                     running = false
                 }
             }
