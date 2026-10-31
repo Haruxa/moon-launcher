@@ -175,17 +175,32 @@ class Prefs(ctx: Context) {
 
     /** Пин движка для сборки с нативными модами. */
     var nativePin: String
-        get() = p.getString("native_pin", DEFAULT_NATIVE_PIN) ?: DEFAULT_NATIVE_PIN
+        get() {
+            val saved = p.getString("native_pin", "") ?: ""
+            // пин прошлых версий лаунчера подменяем на актуальный
+            return if (saved.isBlank() || saved in LEGACY_PINS) DEFAULT_NATIVE_PIN else saved
+        }
         set(v) = p.edit().putString("native_pin", v).apply()
 
     /** Ревизия horizon-mixins, которой вшиваются моды. */
     var mixinsRev: String
-        get() = p.getString("mixins_rev", DEFAULT_MIXINS_REV) ?: DEFAULT_MIXINS_REV
+        get() {
+            val saved = p.getString("mixins_rev", "") ?: ""
+            return if (saved.isBlank() || saved in LEGACY_MIXINS) DEFAULT_MIXINS_REV else saved
+        }
         set(v) = p.edit().putString("mixins_rev", v).apply()
 
     companion object {
-        /** Пин из каталога Horizon для версии 2.0.0 (classic_zoom): проверен сборкой. */
-        const val DEFAULT_NATIVE_PIN = "6f8c7a0e5d531d3834c4d0be4659a1db8e7e5c2a"
-        const val DEFAULT_MIXINS_REV = "0d6b103c70633d8fd9443d8d0acd3aadaacedb06"
+        /**
+         * Дефолтный пин движка: Nightly 2026-10-30 (`a46ce68`). Проверен сборкой с
+         * портом Android и миксинами (blockscope, chatheads), подпись движка видна
+         * в «Сборке» и в подвале экрана загрузки.
+         */
+        const val DEFAULT_NATIVE_PIN = "a46ce6898bd72016e061aaec1afc1375b384deac"
+        const val DEFAULT_MIXINS_REV = "3f99a5c60dfa311cc365524c44ae2fd799bfa1de"
+
+        /** Пины и ревизии, которые ставили прошлые версии лаунчера. */
+        private val LEGACY_PINS = setOf("6f8c7a0e5d531d3834c4d0be4659a1db8e7e5c2a")
+        private val LEGACY_MIXINS = setOf("0d6b103c70633d8fd9443d8d0acd3aadaacedb06")
     }
 }
