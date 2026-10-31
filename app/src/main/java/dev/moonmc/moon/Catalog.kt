@@ -111,6 +111,15 @@ object Http {
         return text
     }
 
+    fun bytes(url: String, token: String? = null): ByteArray {
+        val c = URL(url).openConnection() as HttpURLConnection
+        c.connectTimeout = 30_000
+        c.readTimeout = 60_000
+        c.setRequestProperty("User-Agent", "Moon-launcher/0.1")
+        token?.let { c.setRequestProperty("Authorization", "Bearer $it") }
+        return c.inputStream.use { it.readBytes() }
+    }
+
     fun download(url: String, target: File, token: String? = null) {
         val c = URL(url).openConnection() as HttpURLConnection
         c.connectTimeout = 30_000
