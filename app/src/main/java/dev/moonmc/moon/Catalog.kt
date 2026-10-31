@@ -163,6 +163,11 @@ class Prefs(ctx: Context) {
     val shaderPacksDir get() = File(home, "shaderpacks")
     val downloadsDir get() = File(home, "launcher")
 
+    /** Список сборки: JSON с модами (BuildList). */
+    var buildList: String
+        get() = p.getString("build_list", "") ?: ""
+        set(v) = p.edit().putString("build_list", v).apply()
+
     /** Выбранные бандлы .hnmod (имена без расширения, через запятую). */
     var nativeMods: String
         get() = p.getString("native_mods", "") ?: ""
