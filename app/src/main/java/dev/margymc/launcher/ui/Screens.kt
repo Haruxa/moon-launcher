@@ -133,6 +133,7 @@ fun HorizonScreen(prefs: Prefs) {
 
 @Composable
 fun ModrinthScreen(prefs: Prefs) {
+    val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
     var kind by remember { mutableStateOf(Modrinth.Kind.RESOURCE_PACK) }
     var query by remember { mutableStateOf("") }
