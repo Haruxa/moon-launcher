@@ -55,18 +55,18 @@ fun HorizonScreen(prefs: Prefs) {
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         item {
-            ScreenHeader("Моды Horizon", "Каталог модов и нативных расширений для игры 26.3")
+            ScreenHeader(I18n.t("Моды Horizon"), I18n.t("Каталог модов и нативных расширений для игры 26.3"))
         }
         item {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                FilterChip(selected = !showNative, onClick = { showNative = false }, label = { Text("Готовые") })
-                FilterChip(selected = showNative, onClick = { showNative = true }, label = { Text("Нативные") })
+                FilterChip(selected = !showNative, onClick = { showNative = false }, label = { Text(I18n.t("Готовые")) })
+                FilterChip(selected = showNative, onClick = { showNative = true }, label = { Text(I18n.t("Нативные")) })
                 Spacer(Modifier.weight(1f))
                 if (loading) MorphLoading()
             }
         }
         status?.let { item { StatusPill(it, MaterialTheme.colorScheme.primaryContainer, MaterialTheme.colorScheme.onPrimaryContainer) } }
-        error?.let { item { StatusPill("Ошибка: $it", MaterialTheme.colorScheme.errorContainer, MaterialTheme.colorScheme.onErrorContainer) } }
+        error?.let { item { StatusPill(I18n.t("Ошибка: ") + it, MaterialTheme.colorScheme.errorContainer, MaterialTheme.colorScheme.onErrorContainer) } }
 
         items(visible, key = { it.id }) { p ->
             ShapeCard() {
@@ -90,28 +90,28 @@ fun HorizonScreen(prefs: Prefs) {
                     }
                     Spacer(Modifier.weight(1f))
                     if (!p.isNative) {
-                        ExpressiveButton("Установить", Icons.Rounded.Download) {
+                        ExpressiveButton(I18n.t("Установить"), Icons.Rounded.Download) {
                             scope.launch {
-                                status = "${p.name}: скачиваю…"
+                                status = "${p.name}: " + I18n.t("скачиваю…")
                                 runCatching {
                                     withContext(Dispatchers.IO) {
-                                        val v = p.latest ?: error("нет версии для 26.3")
+                                        val v = p.latest ?: error(I18n.t("нет версии для 26.3"))
                                         Install.downloadVerified(v.fileUrl, File(prefs.modsDir, v.fileName), v.sha256)
                                     }
-                                }.onSuccess { status = "${p.name}: установлен" }
+                                }.onSuccess { status = "${p.name}: " + I18n.t("установлен") }
                                     .onFailure { status = "${p.name}: ${it.message}" }
                             }
                         }
                     } else {
-                        ExpressiveButton("Собрать APK", Icons.Rounded.Build) {
+                        ExpressiveButton(I18n.t("Собрать APK"), Icons.Rounded.Build) {
                             scope.launch {
                                 val v = p.latest
                                 if (v == null) {
-                                    status = "${p.name}: нет версии"
+                                    status = "${p.name}: " + I18n.t("нет версии")
                                 } else if (prefs.token.isBlank()) {
-                                    status = "Нужен токен GitHub — вкладка «Ещё»"
+                                    status = I18n.t("Нужен токен GitHub — вкладка «Ещё»")
                                 } else {
-                                    status = "${p.name}: запускаю сборку…"
+                                    status = "${p.name}: " + I18n.t("запускаю сборку…")
                                     runCatching {
                                         withContext(Dispatchers.IO) {
                                             Builder(
@@ -120,7 +120,7 @@ fun HorizonScreen(prefs: Prefs) {
                                                 progress = { _ -> },
                                             ).build(listOf(v.fileUrl), v.nativePin, v.mixinsPin)
                                         }
-                                    }.onFailure { status = "Ошибка: ${it.message}" }
+                                    }.onFailure { status = I18n.t("Ошибка: ") + it.message }
                                 }
                             }
                         }
@@ -162,7 +162,7 @@ fun ModrinthScreen(prefs: Prefs) {
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         item {
-            ScreenHeader("Modrinth", "Пакеты — как есть, Java-моды переносим данными в .hmod")
+            ScreenHeader("Modrinth", I18n.t("Пакеты — как есть, Java-моды переносим данными в .hmod"))
         }
         item {
             Row(
@@ -170,7 +170,7 @@ fun ModrinthScreen(prefs: Prefs) {
                 modifier = Modifier.horizontalScroll(rememberScrollState()),
             ) {
                 Modrinth.Kind.entries.forEach { k ->
-                    FilterChip(selected = kind == k, onClick = { kind = k }, label = { Text(k.title) })
+                    FilterChip(selected = kind == k, onClick = { kind = k }, label = { Text(I18n.t(k.title)) })
                 }
             }
         }
@@ -179,7 +179,7 @@ fun ModrinthScreen(prefs: Prefs) {
                 OutlinedTextField(
                     value = query,
                     onValueChange = { query = it },
-                    label = { Text("Поиск") },
+                    label = { Text(I18n.t("Поиск")) },
                     singleLine = true,
                     shape = MaterialTheme.shapes.extraLarge,
                     modifier = Modifier.weight(1f),
@@ -214,7 +214,7 @@ fun ModrinthScreen(prefs: Prefs) {
                 ) {
                     if (kind == Modrinth.Kind.MOD) {
                         when {
-                            res == null -> StatusPill("нужен анализ")
+                            res == null -> StatusPill(I18n.t("нужен анализ"))
                             else -> CompatBadge(res.level)
                         }
                     }
@@ -240,10 +240,10 @@ fun ModrinthScreen(prefs: Prefs) {
                         OutlinedButton(
                             onClick = {
                                 scope.launch {
-                                    status = "${h.title}: качаю jar для анализа…"
+                                    status = "${h.title}: " + I18n.t("качаю jar для анализа…")
                                     runCatching {
                                         withContext(Dispatchers.IO) {
-                                            val f = Modrinth.file(h.id, kind) ?: error("нет файла мода")
+                                            val f = Modrinth.file(h.id, kind) ?: error(I18n.t("нет файла мода"))
                                             val jar = jars[h.id] ?: File(
                                                 ctx.cacheDir,
                                                 "jars/${h.slug.ifBlank { h.id }}-${f.version}.jar",
@@ -256,15 +256,15 @@ fun ModrinthScreen(prefs: Prefs) {
                                     }.onFailure { status = "${h.title}: ${it.message}" }
                                 }
                             },
-                        ) { Text("Анализ") }
+                        ) { Text(I18n.t("Анализ")) }
 
                         if (res != null && res.level != Analyze.Level.IMPOSSIBLE && res.level != Analyze.Level.NOT_NEEDED) {
-                            ExpressiveButton("В .hmod", Icons.Rounded.Build) {
+                            ExpressiveButton(I18n.t("В .hmod"), Icons.Rounded.Build) {
                                 scope.launch {
-                                    status = "${h.title}: собираю .hmod…"
+                                    status = "${h.title}: " + I18n.t("собираю .hmod…")
                                     runCatching {
                                         withContext(Dispatchers.IO) {
-                                            val jar = jars[h.id] ?: error("сначала анализ")
+                                            val jar = jars[h.id] ?: error(I18n.t("сначала анализ"))
                                             val f = Modrinth.file(h.id, kind)
                                             val id = h.slug.ifBlank { h.id }
                                             Analyze.convert(
@@ -278,22 +278,22 @@ fun ModrinthScreen(prefs: Prefs) {
                                             )
                                         }
                                     }.onSuccess { c ->
-                                        status = "${h.title}: ${c.files} файлов, пропущено ${c.skipped} → ${c.file.name}"
+                                        status = "${h.title}: ${c.files}" + I18n.t(" файлов, пропущено ") + "${c.skipped} → ${c.file.name}"
                                     }.onFailure { status = "${h.title}: ${it.message}" }
                                 }
                             }
                         }
                     } else {
-                        ExpressiveButton("Ставить", Icons.Rounded.Download) {
+                        ExpressiveButton(I18n.t("Ставить"), Icons.Rounded.Download) {
                             scope.launch {
-                                status = "${h.title}: скачиваю…"
+                                status = "${h.title}: " + I18n.t("скачиваю…")
                                 runCatching {
                                     withContext(Dispatchers.IO) {
-                                        val f = Modrinth.file(h.id, kind) ?: error("нет сборки под 26.x")
+                                        val f = Modrinth.file(h.id, kind) ?: error(I18n.t("нет сборки под 26.x"))
                                         val dir = File(prefs.home, kind.target)
                                         Install.downloadVerified(f.url, File(dir, f.name), f.sha1, "SHA-1")
                                     }
-                                }.onSuccess { status = "${h.title}: установлено в ${kind.target}" }
+                                }.onSuccess { status = "${h.title}: " + I18n.t("установлено в ") + kind.target }
                                     .onFailure { status = "${h.title}: ${it.message}" }
                             }
                         }
@@ -320,11 +320,11 @@ fun BuildScreen(prefs: Prefs) {
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         item {
-            ScreenHeader("Сборка APK", "Нативные моды (.hnmod) вшиваются в игру в GitHub Actions")
+            ScreenHeader(I18n.t("Сборка APK"), I18n.t("Нативные моды (.hnmod) вшиваются в игру в GitHub Actions"))
         }
         item {
             ShapeCard() {
-                Text("Как это работает", style = MaterialTheme.typography.titleMedium)
+                Text(I18n.t("Как это работает"), style = MaterialTheme.typography.titleMedium)
                 Text(
                     "Лаунчер кладёт рецепт сборки в твой приватный репозиторий, запускает " +
                         "GitHub Actions и через 20–40 минут присылает готовый APK. " +
@@ -336,12 +336,12 @@ fun BuildScreen(prefs: Prefs) {
         }
         item {
             ExpressiveButton(
-                text = if (running) "Собирается…" else "Собрать APK с модами",
+                text = if (running) I18n.t("Собирается…") else I18n.t("Собрать APK с модами"),
                 icon = Icons.Rounded.Build,
                 enabled = !running,
             ) {
                 if (prefs.token.isBlank()) {
-                    lines = listOf("Сначала вставь токен GitHub на вкладке «Ещё»")
+                    lines = listOf(I18n.t("Сначала вставь токен GitHub на вкладке «Ещё»"))
                     return@ExpressiveButton
                 }
                 scope.launch {
@@ -353,14 +353,14 @@ fun BuildScreen(prefs: Prefs) {
                         progress = { p -> progress = p },
                     )
                     runCatching { builder.build(emptyList()) }
-                        .onFailure { lines = lines + "Ошибка: ${it.message}" }
+                        .onFailure { lines = lines + I18n.t("Ошибка: ") + it.message }
                     running = false
                 }
             }
         }
         item {
             progress?.let { WaveProgress({ it }) }
-            if (running) LoadingRow("Идёт сборка — можно свернуть приложение")
+            if (running) LoadingRow(I18n.t("Идёт сборка — можно свернуть приложение"))
         }
         items(lines) { line ->
             Text(line, style = MaterialTheme.typography.bodySmall)
@@ -383,14 +383,14 @@ fun SettingsScreen(prefs: Prefs) {
         contentPadding = PaddingValues(PagePadding),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        item { ScreenHeader("Ещё", "Подключение, папки и права") }
+        item { ScreenHeader(I18n.t("Ещё"), I18n.t("Подключение, папки и права")) }
         item {
             ShapeCard() {
                 Text("GitHub", style = MaterialTheme.typography.titleMedium)
                 OutlinedTextField(
                     value = token,
                     onValueChange = { token = it; saved = false },
-                    label = { Text("Токен (repo + workflow)") },
+                    label = { Text(I18n.t("Токен (repo + workflow)")) },
                     singleLine = true,
                     shape = MaterialTheme.shapes.extraLarge,
                     visualTransformation = PasswordVisualTransformation(),
@@ -401,7 +401,7 @@ fun SettingsScreen(prefs: Prefs) {
                 OutlinedTextField(
                     value = repo,
                     onValueChange = { repo = it; saved = false },
-                    label = { Text("Репозиторий сборок (owner/name)") },
+                    label = { Text(I18n.t("Репозиторий сборок (owner/name)")) },
                     singleLine = true,
                     shape = MaterialTheme.shapes.extraLarge,
                     modifier = Modifier.fillMaxWidth(),
@@ -410,35 +410,58 @@ fun SettingsScreen(prefs: Prefs) {
         }
         item {
             ShapeCard() {
-                Text("Папка игры", style = MaterialTheme.typography.titleMedium)
+                Text(I18n.t("Папка игры"), style = MaterialTheme.typography.titleMedium)
                 OutlinedTextField(
                     value = home,
                     onValueChange = { home = it; saved = false },
-                    label = { Text("Путь") },
+                    label = { Text(I18n.t("Путь")) },
                     singleLine = true,
                     shape = MaterialTheme.shapes.extraLarge,
                     modifier = Modifier.fillMaxWidth(),
                 )
                 Spacer(Modifier.height(6.dp))
                 Text(
-                    "Моды: ${prefs.modsDir}",
+                    I18n.t("Моды: ") + prefs.modsDir,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
         item {
-            ExpressiveButton("Сохранить", Icons.Rounded.Check) {
+            ExpressiveButton(I18n.t("Сохранить"), Icons.Rounded.Check) {
                 prefs.token = token.trim()
                 prefs.repo = repo.trim()
                 prefs.home = home.trim()
                 saved = true
             }
-            if (saved) StatusPill("Сохранено")
+            if (saved) StatusPill(I18n.t("Сохранено"))
         }
         item {
             ShapeCard() {
-                Text("Права", style = MaterialTheme.typography.titleMedium)
+                Text(I18n.t("Язык"), style = MaterialTheme.typography.titleMedium)
+                Text(
+                    I18n.t("Интерфейс лаунчера"),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(8.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    I18n.languages.forEach { (code, title) ->
+                        FilterChip(
+                            selected = prefs.lang == code,
+                            onClick = {
+                                prefs.lang = code
+                                (ctx as? android.app.Activity)?.recreate()
+                            },
+                            label = { Text(title) },
+                        )
+                    }
+                }
+            }
+        }
+        item {
+            ShapeCard() {
+                Text(I18n.t("Права"), style = MaterialTheme.typography.titleMedium)
                 Text(
                     "Лаунчер пишет файлы в папку игры и отдаёт APK системному установщику.",
                     style = MaterialTheme.typography.bodySmall,
@@ -446,8 +469,8 @@ fun SettingsScreen(prefs: Prefs) {
                 )
                 Spacer(Modifier.height(10.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedButton(onClick = { openAllFiles(ctx) }) { Text("Все файлы") }
-                    OutlinedButton(onClick = { openUnknownSources(ctx) }) { Text("Установка APK") }
+                    OutlinedButton(onClick = { openAllFiles(ctx) }) { Text(I18n.t("Все файлы")) }
+                    OutlinedButton(onClick = { openUnknownSources(ctx) }) { Text(I18n.t("Установка APK")) }
                 }
             }
         }
@@ -483,5 +506,5 @@ fun CompatBadge(level: Analyze.Level) {
         Analyze.Level.NOT_NEEDED -> scheme.surfaceContainerHighest to scheme.onSurfaceVariant
         Analyze.Level.IMPOSSIBLE -> scheme.errorContainer to scheme.onErrorContainer
     }
-    StatusPill(level.short, bg, fg)
+    StatusPill(I18n.t(level.short), bg, fg)
 }
