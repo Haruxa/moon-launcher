@@ -20,7 +20,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import dev.margymc.launcher.ui.*
 
@@ -43,7 +42,13 @@ class MainActivity : ComponentActivity() {
         ) {
             requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 1)
         }
-        setContent { MargyTheme { App() } }
+        val prefs = Prefs(this)
+        I18n.lang = prefs.lang
+        setContent {
+            key(prefs.lang) {
+                MargyTheme { App(prefs) }
+            }
+        }
     }
 }
 
@@ -55,36 +60,37 @@ private enum class Tab(val title: String, val icon: ImageVector) {
     SETTINGS("Ещё", Icons.Outlined.Settings),
 }
 
+/** Лаунчер всегда горизонтальный: вкладки — слева в рейле. */
 @Composable
-fun App() {
-    val ctx = LocalContext.current
-    val prefs = remember { Prefs(ctx) }
+fun App(prefs: Prefs) {
     var tab by remember { mutableStateOf(Tab.HORIZON) }
 
-    Scaffold(
-        bottomBar = {
-            NavigationBar(
-                containerColor = MaterialTheme.colorScheme.surfaceContainer,
-                tonalElevation = 0.dp,
-            ) {
-                Tab.entries.forEach { t ->
-                    NavigationBarItem(
-                        selected = tab == t,
-                        onClick = { tab = t },
-                        icon = { Icon(t.icon, contentDescription = t.title) },
-                        label = { Text(t.title) },
-                        alwaysShowLabel = true,
-                        colors = NavigationBarItemDefaults.colors(
-                            indicatorColor = MaterialTheme.colorScheme.primaryContainer,
-                            selectedIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                            selectedTextColor = MaterialTheme.colorScheme.onSurface,
-                        ),
-                    )
-                }
+    Row(Modifier.fillMaxSize()) {
+        NavigationRail(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+            header = {
+                Spacer(Modifier.height(6.dp))
+                Icon(Icons.Rounded.AutoAwesomeMotion, null, tint = MaterialTheme.colorScheme.primary)
+                Spacer(Modifier.height(14.dp))
+            },
+        ) {
+            Tab.entries.forEach { t ->
+                NavigationRailItem(
+                    selected = tab == t,
+                    onClick = { tab = t },
+                    icon = { Icon(t.icon, contentDescription = I18n.t(t.title)) },
+                    label = { Text(I18n.t(t.title)) },
+                    alwaysShowLabel = true,
+                    colors = NavigationRailItemDefaults.colors(
+                        indicatorColor = MaterialTheme.colorScheme.primaryContainer,
+                        selectedIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                        selectedTextColor = MaterialTheme.colorScheme.onSurface,
+                    ),
+                )
             }
         }
-    ) { padding ->
-        Box(Modifier.fillMaxSize().padding(padding)) {
+        VerticalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+        Box(Modifier.weight(1f).fillMaxHeight()) {
             when (tab) {
                 Tab.HORIZON -> HorizonScreen(prefs)
                 Tab.MODRINTH -> ModrinthScreen(prefs)
