@@ -105,6 +105,9 @@ object I18n {
         "Бандлы в репозитории" to "Bundles in the repository",
         "ci/bundles — файлы .hnmod, которые вшиваются на сборке" to
             "ci/bundles — .hnmod files compiled into the APK",
+        "на этом движке ✓" to "works on this engine ✓",
+        "на этом движке не собирается" to "does not build on this engine",
+        "на этом движке не собирается: " to "does not build on this engine: ",
         "Движок" to "Engine",
         "Читаю ночники…" to "Reading nightlies…",
         "Пин на самом свежем ночнике" to "The pin is on the newest nightly",
