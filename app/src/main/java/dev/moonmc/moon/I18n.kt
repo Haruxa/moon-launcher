@@ -105,6 +105,10 @@ object I18n {
         "Бандлы в репозитории" to "Bundles in the repository",
         "ci/bundles — файлы .hnmod, которые вшиваются на сборке" to
             "ci/bundles — .hnmod files compiled into the APK",
+        "Анализ" to "Analyze",
+        "анализирую…" to "analyzing…",
+        "анализ: всё на месте" to "analysis: everything is in place",
+        "анализ: нужны исходники движка" to "analysis: engine sources are needed",
         "на этом движке ✓" to "works on this engine ✓",
         "на этом движке не собирается" to "does not build on this engine",
         "на этом движке не собирается: " to "does not build on this engine: ",
