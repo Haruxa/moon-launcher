@@ -19,7 +19,7 @@ push_file() {
 
 find . -type f \
   \( -name '*.kt' -o -name '*.kts' -o -name '*.xml' -o -name '*.properties' -o -name '*.yml' \
-     -o -name '*.py' -o -name '*.sh' -o -name '*.png' \) \
+     -o -name '*.py' -o -name '*.sh' -o -name '*.java' -o -name '*.png' \) \
   -not -path './build/*' -not -path './.gradle/*' | sed 's|^\./||' | sort | while read -r f; do
   push_file "$f"
 done
