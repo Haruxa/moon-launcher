@@ -42,6 +42,8 @@ fun HorizonScreen(prefs: Prefs) {
     var buildEntries by remember { mutableStateOf(BuildList.load(prefs)) }
     // матрица совместимости для выбранного пина (ci/compat/<pin>.json)
     var compat by remember { mutableStateOf<Engine.Compat?>(null) }
+    // результаты анализа нативных модов (кнопка «Анализ», без сборки)
+    val analyses = remember { mutableStateMapOf<String, NativeAnalyze.Result>() }
 
     LaunchedEffect(prefs.nativePin) {
         runCatching {
@@ -136,6 +138,41 @@ fun HorizonScreen(prefs: Prefs) {
                         val v = p.latest
                         val id = v?.let { "url:" + it.fileUrl }
                         val inList = id != null && buildEntries.any { it.id == id }
+                        val analysis = v?.let { analyses[p.id] }
+                        analysis?.let {
+                            StatusPill(
+                                I18n.t(it.summary),
+                                if (it.verdict == NativeAnalyze.Verdict.OK)
+                                    MaterialTheme.colorScheme.secondaryContainer
+                                else MaterialTheme.colorScheme.errorContainer,
+                                if (it.verdict == NativeAnalyze.Verdict.OK)
+                                    MaterialTheme.colorScheme.onSecondaryContainer
+                                else MaterialTheme.colorScheme.onErrorContainer,
+                            )
+                        }
+                        if (v != null) {
+                            ExpressiveButton(I18n.t("Анализ"), Icons.Rounded.Search) {
+                                scope.launch {
+                                    status = "${p.name}: " + I18n.t("анализирую…")
+                                    runCatching {
+                                        withContext(Dispatchers.IO) {
+                                            NativeAnalyze.analyze(
+                                                url = v.fileUrl,
+                                                modId = p.id,
+                                                version = v.version,
+                                                pin = prefs.nativePin,
+                                                token = prefs.token.ifBlank { null },
+                                            )
+                                        }
+                                    }.onSuccess {
+                                        analyses[p.id] = it
+                                        status = "${p.name}: " + I18n.t(it.summary)
+                                    }.onFailure {
+                                        status = "${p.name}: " + I18n.t("Ошибка: ") + it.message
+                                    }
+                                }
+                            }
+                        }
                         ExpressiveButton(
                             text = if (inList) I18n.t("В списке") else I18n.t("В список сборки"),
                             icon = if (inList) Icons.Rounded.Check else Icons.Rounded.Add,
