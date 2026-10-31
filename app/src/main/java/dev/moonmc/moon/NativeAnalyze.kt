@@ -37,10 +37,14 @@ object NativeAnalyze {
             }
 
         val problems: List<Check> get() = checks.filter { !it.ok }
+        /** Коротко: длинные пути в интерфейсе не нужны. */
         val summary: String
             get() = when (verdict) {
                 Verdict.OK -> "анализ: всё на месте"
-                Verdict.BROKEN -> "анализ: " + problems.take(2).joinToString("; ") { it.detail }
+                Verdict.BROKEN -> "анализ: " + problems.first().let { it.detail }.let { detail ->
+                    val short = detail.substringAfterLast('/').ifBlank { detail }
+                    if (short.length > 60) short.take(59) + "…" else short
+                }
                 Verdict.UNKNOWN -> "анализ: нужны исходники движка"
             }
     }
