@@ -236,32 +236,73 @@ private fun BindDialog(
     var busy by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
-    // Старт device flow.
-    LaunchedEffect(Unit) {
-        runCatching { withContext(Dispatchers.IO) { GithubAuth.start(prefs.clientId) } }
-            .onSuccess { device = it; status = I18n.t("Жду подтверждения в браузере…") }
-            .onFailure { error = it.message; status = I18n.t("Не удалось получить код") }
+    var attempt by remember { mutableStateOf(0) }
+
+    // Старт device flow: пара коротких повторов на случай, если сеть моргнула.
+    LaunchedEffect(attempt) {
+        device = null
+        error = null
+        status = I18n.t("Готовлю код…")
+        var last: String? = null
+        repeat(3) {
+            val res = runCatching { withContext(Dispatchers.IO) { GithubAuth.start(prefs.clientId) } }
+            if (res.isSuccess) {
+                device = res.getOrNull()
+                status = I18n.t("Жду подтверждения в браузере…")
+                return@LaunchedEffect
+            }
+            last = res.exceptionOrNull()?.message
+            delay(1500)
+        }
+        error = last
+        status = I18n.t("Не удалось получить код")
     }
 
-    // Опрос, пока пользователь не подтвердит.
+    // Опрос: сеть может моргнуть (DNS, VPN, спящий экран) — не сдаёмся до истечения кода.
     LaunchedEffect(device) {
         val d = device ?: return@LaunchedEffect
-        repeat((d.expiresIn / d.interval.coerceAtLeast(5)).coerceAtMost(120)) {
-            delay(d.interval.coerceAtLeast(5) * 1000L)
-            val got = runCatching { withContext(Dispatchers.IO) { GithubAuth.poll(prefs.clientId, d.deviceCode) } }
-            got.onFailure { error = it.message; return@LaunchedEffect }
-            val token = got.getOrNull() ?: return@repeat
-            runCatching {
+        val deadline = System.currentTimeMillis() + d.expiresIn * 1000L
+        var wait = d.interval.coerceAtLeast(5)
+        while (System.currentTimeMillis() < deadline) {
+            delay(wait * 1000L)
+            val res = withContext(Dispatchers.IO) {
+                runCatching { GithubAuth.poll(prefs.clientId, d.deviceCode) }
+            }
+            val token = res.getOrNull()
+            if (res.isFailure) {
+                val e = res.exceptionOrNull()
+                if (e is java.io.IOException) {
+                    status = I18n.t("Нет сети — пробую снова…")
+                    wait = (wait + 2).coerceAtMost(20)
+                    continue
+                }
+                error = e?.message
+                return@LaunchedEffect
+            }
+            if (token == null) {
+                status = I18n.t("Жду подтверждения в браузере…")
+                wait = d.interval.coerceAtLeast(5)
+                continue
+            }
+            error = null
+            val save = runCatching {
                 val name = withContext(Dispatchers.IO) { GithubAuth.login(token) }
-                prefs.token = token
-                prefs.ghLogin = name
                 name
-            }.onSuccess { onBound(it) }.onFailure { error = it.message }
+            }
+            prefs.token = token
+            val name = save.getOrNull()
+            if (name != null) {
+                prefs.ghLogin = name
+                onBound(name)
+            } else {
+                // Токен уже есть — сохраняем, даже если профиль прочитать не удалось.
+                error = save.exceptionOrNull()?.message
+                status = I18n.t("Токен сохранён, но имя профиля не прочитано")
+            }
             return@LaunchedEffect
         }
         status = I18n.t("Код устарел — закрой окно и начни заново")
     }
-
 
     AlertDialog(
         onDismissRequest = onClose,
@@ -310,6 +351,9 @@ private fun BindDialog(
                     if (device != null && error == null) MorphLoading(Modifier.size(22.dp))
                     Spacer(Modifier.width(8.dp))
                     Text(status, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                if (device == null) {
+                    OutlinedButton(onClick = { attempt++ }) { Text(I18n.t("Повторить")) }
                 }
                 error?.let { Text(I18n.t("Ошибка: ") + it, fontSize = 12.sp, color = MaterialTheme.colorScheme.error) }
 
@@ -403,63 +447,5 @@ private fun HelpStep(num: String, text: String) {
         }
         Spacer(Modifier.width(10.dp))
         Text(text, style = MaterialTheme.typography.bodyMedium)
-    }
-}
-
-/* ----------------------------------- Git ----------------------------------- */
-
-@Composable
-fun GitCard(prefs: Prefs) {
-    val ctx = LocalContext.current
-    val repo = prefs.repo
-    val url = if (repo.isBlank()) "" else "https://github.com/$repo"
-
-    ShapeCard {
-        Text(I18n.t("Git"), style = MaterialTheme.typography.titleMedium)
-        Text(
-            I18n.t("Ссылка на выбранный репозиторий и команда клонирования"),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Spacer(Modifier.height(10.dp))
-        if (repo.isBlank()) {
-            Text(I18n.t("Репозиторий не выбран"), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        } else {
-            Surface(
-                shape = RoundedCornerShape(16.dp),
-                color = MaterialTheme.colorScheme.surfaceContainerHighest,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Column(Modifier.padding(12.dp)) {
-                    Text(repo, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    Text(
-                        "git clone " + url + ".git",
-                        fontFamily = FontFamily.Monospace,
-                        fontSize = 11.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 2,
-                    )
-                }
-            }
-            Spacer(Modifier.height(10.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedButton(onClick = { copyText(ctx, "git clone $url.git") }) {
-                    Icon(Icons.Rounded.ContentCopy, null, Modifier.size(18.dp))
-                    Spacer(Modifier.width(6.dp))
-                    Text(I18n.t("Копировать"), fontSize = 12.sp)
-                }
-                OutlinedButton(onClick = { Install.openUrl(ctx, url) }) {
-                    Icon(Icons.Rounded.OpenInNew, null, Modifier.size(18.dp))
-                    Spacer(Modifier.width(6.dp))
-                    Text(I18n.t("Открыть"), fontSize = 12.sp)
-                }
-            }
-        }
-        Spacer(Modifier.height(8.dp))
-        Text(
-            I18n.t("Папка для репозиториев: ") + prefs.gitDir,
-            fontSize = 11.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
     }
 }
