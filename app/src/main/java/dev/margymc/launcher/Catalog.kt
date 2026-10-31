@@ -133,6 +133,11 @@ class Prefs(ctx: Context) {
         get() = p.getString("repo", "") ?: ""
         set(v) = p.edit().putString("repo", v).apply()
 
+    /** Язык интерфейса: "en" по умолчанию, "ru" — русский. */
+    var lang: String
+        get() = p.getString("lang", "en") ?: "en"
+        set(v) = p.edit().putString("lang", v).apply()
+
     /** Папка игры (та же, что у MargyMC на /sdcard). */
     var home: String
         get() = p.getString("home", "/sdcard/MargyMC/horizon") ?: "/sdcard/MargyMC/horizon"
