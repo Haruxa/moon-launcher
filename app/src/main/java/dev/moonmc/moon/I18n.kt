@@ -72,7 +72,22 @@ object I18n {
             "The launcher uploads a build recipe to your private repository, triggers " +
                 "GitHub Actions and delivers a ready APK in 20–40 minutes. " +
                 "Nothing is compiled on the phone.",
+        "Нативные моды (.hnmod)" to "Native mods (.hnmod)",
+        "Отметь, что вшить в APK. Список — ci/bundles в репозитории сборки." to
+            "Tick what to compile into the APK. The list is ci/bundles in the build repository.",
+        "Читаю список…" to "Reading the list…",
+        "В репозитории пока нет .hnmod" to "No .hnmod in the repository yet",
+        "КБ" to "KB",
+        "Обновить список" to "Refresh list",
+        "Добавить .hnmod" to "Add .hnmod",
+        "Выбрано: " to "Selected: ",
+        "Добавлено: " to "Added: ",
+        "Пин движка" to "Engine pin",
+        "Коммит horizon" to "horizon commit",
+        "Нативные моды жёстко привязаны к коммиту движка" to
+            "Native mods are bound to the engine commit",
         "Собирается…" to "Building…",
+        "Собрать APK с выбранными модами" to "Build APK with selected mods",
         "Собрать APK с модами" to "Build APK with mods",
         "Сначала вставь токен GitHub на вкладке «Ещё»" to "Paste a GitHub token on the “More” tab first",
         "Идёт сборка — можно свернуть приложение" to "Building — you can minimize the app",
