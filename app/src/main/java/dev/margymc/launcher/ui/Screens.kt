@@ -69,7 +69,7 @@ fun HorizonScreen(prefs: Prefs) {
         error?.let { item { StatusPill("Ошибка: $it", MaterialTheme.colorScheme.errorContainer, MaterialTheme.colorScheme.onErrorContainer) } }
 
         items(visible, key = { it.id }) { p ->
-            ShapeCard(polygon = Morf.Cookie9) {
+            ShapeCard() {
                 Text(
                     p.name,
                     style = MaterialTheme.typography.titleLarge,
@@ -193,7 +193,7 @@ fun ModrinthScreen(prefs: Prefs) {
 
         items(hits, key = { it.id }) { h ->
             val res = analyzed[h.id]
-            ShapeCard(polygon = Morf.Cookie9) {
+            ShapeCard() {
                 Text(
                     h.title,
                     style = MaterialTheme.typography.titleMedium,
@@ -323,7 +323,7 @@ fun BuildScreen(prefs: Prefs) {
             ScreenHeader("Сборка APK", "Нативные моды (.hnmod) вшиваются в игру в GitHub Actions")
         }
         item {
-            ShapeCard(polygon = Morf.Sunny) {
+            ShapeCard() {
                 Text("Как это работает", style = MaterialTheme.typography.titleMedium)
                 Text(
                     "Лаунчер кладёт рецепт сборки в твой приватный репозиторий, запускает " +
@@ -385,7 +385,7 @@ fun SettingsScreen(prefs: Prefs) {
     ) {
         item { ScreenHeader("Ещё", "Подключение, папки и права") }
         item {
-            ShapeCard(polygon = Morf.Cookie9) {
+            ShapeCard() {
                 Text("GitHub", style = MaterialTheme.typography.titleMedium)
                 OutlinedTextField(
                     value = token,
@@ -409,7 +409,7 @@ fun SettingsScreen(prefs: Prefs) {
             }
         }
         item {
-            ShapeCard(polygon = Morf.Cookie9) {
+            ShapeCard() {
                 Text("Папка игры", style = MaterialTheme.typography.titleMedium)
                 OutlinedTextField(
                     value = home,
@@ -437,7 +437,7 @@ fun SettingsScreen(prefs: Prefs) {
             if (saved) StatusPill("Сохранено")
         }
         item {
-            ShapeCard(polygon = Morf.Circle) {
+            ShapeCard() {
                 Text("Права", style = MaterialTheme.typography.titleMedium)
                 Text(
                     "Лаунчер пишет файлы в папку игры и отдаёт APK системному установщику.",
