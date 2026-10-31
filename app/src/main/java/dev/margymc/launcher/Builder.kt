@@ -25,13 +25,13 @@ class Builder(
         Github.whoami(token)
 
         if (repo.isBlank()) {
-            log("Создаю приватный репозиторий margymc-builds…")
-            prefs.repo = Github.ensurePrivateRepo(token, "margymc-builds", Github.whoami(token))
+            // рецепты сборки и архив Minecraft уже лежат в этом приватном репозитории
+            prefs.repo = "Haruxa/margymc-apk"
         }
         log("Репозиторий: ${prefs.repo}")
 
         log("Обновляю рецепты сборки…")
-        uploadRecipe()
+        runCatching { uploadRecipe() }.onFailure { log("рецепты уже в репозитории: ${it.message}") }
         progress(0.02f)
 
         log("Запускаю сборку (${modUrls.size} нативных мод(ов))…")
