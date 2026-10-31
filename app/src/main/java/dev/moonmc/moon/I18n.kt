@@ -39,6 +39,24 @@ object I18n {
             "Packs install as is; Java mods are ported as data into .hmod",
         "Поиск" to "Search",
         "нужен анализ" to "needs analysis",
+        "О нас" to "About",
+        "Проект, автор и лицензии" to "Project, author and licenses",
+        "Лаунчер и клиент MoonMC — Android-порт Horizon" to
+            "The Moon launcher and MoonMC, the Android port of Horizon",
+        "Движок: " to "Engine: ",
+        "Разработчик" to "Developer",
+        "Следить за проектом" to "Follow the project",
+        "Репозиторий лаунчера" to "Launcher repository",
+        "Сборка игры" to "Game build pipeline",
+        "Авторы и лицензии" to "Credits and licenses",
+        "Мы стоим на чужой работе, и это указано честно:" to
+            "We stand on other people's work, and say so honestly:",
+        "Сам лаунчер — MIT. Файлы Minecraft не распространяются: " +
+            "игра берёт твою собственную копию." to
+            "The launcher itself is MIT. No Minecraft files are distributed: " +
+                "the game uses your own copy.",
+        "Minecraft — торговая марка Mojang Studios. Проект не связан с Mojang и Microsoft." to
+            "Minecraft is a trademark of Mojang Studios. Not affiliated with Mojang or Microsoft.",
         "Иконка" to "Icon",
         "подпись" to "label",
         "Встроенные профили" to "Built-in profiles",
