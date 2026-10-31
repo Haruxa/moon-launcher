@@ -135,22 +135,20 @@ fun ScreenHeader(title: String, subtitle: String? = null, modifier: Modifier = M
     }
 }
 
-/** Карточка с морфной формой. */
+/** Карточка: обычный закруглённый прямоугольник. */
 @Composable
 fun ShapeCard(
     modifier: Modifier = Modifier,
-    polygon: Morf = Morf.Cookie9,
     containerColor: Color = MaterialTheme.colorScheme.surfaceContainerHigh,
-    contentPadding: Dp = 20.dp,
+    contentPadding: Dp = 18.dp,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    Box(modifier.fillMaxWidth()) {
-        MorfBackground(polygon, containerColor, Modifier.matchParentSize())
-        Column(
-            Modifier.padding(horizontal = contentPadding + 4.dp, vertical = contentPadding),
-            content = content,
-        )
-    }
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(28.dp),
+        color = containerColor,
+        content = { Column(Modifier.padding(contentPadding), content = content) },
+    )
 }
 
 /** Кнопка-действие: пилюля, крупная зона нажатия. */
