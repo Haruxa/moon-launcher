@@ -105,6 +105,16 @@ object I18n {
         "Бандлы в репозитории" to "Bundles in the repository",
         "ci/bundles — файлы .hnmod, которые вшиваются на сборке" to
             "ci/bundles — .hnmod files compiled into the APK",
+        "Движок" to "Engine",
+        "Читаю ночники…" to "Reading nightlies…",
+        "Пин на самом свежем ночнике" to "The pin is on the newest nightly",
+        "Новее есть: " to "Newer available: ",
+        "Поставить" to "Use",
+        "Скрыть" to "Hide",
+        "Проверить новее" to "Check for newer",
+        "Пин движка: " to "Engine pin: ",
+        "Ночник — это main плюс неотревьюенные PR: бери, когда нужен мод или фикс под него" to
+            "A nightly is main plus unreviewed PRs: take it when a mod or a fix needs it",
         "Собирается…" to "Building…",
         "Собрать APK с выбранными модами" to "Build APK with selected mods",
         "Собрать APK с модами" to "Build APK with mods",
