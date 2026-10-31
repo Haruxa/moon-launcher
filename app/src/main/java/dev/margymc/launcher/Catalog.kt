@@ -133,6 +133,18 @@ class Prefs(ctx: Context) {
         get() = p.getString("repo", "") ?: ""
         set(v) = p.edit().putString("repo", v).apply()
 
+    /** GitHub-логин, к которому привязан токен (пусто = не привязан). */
+    var ghLogin: String
+        get() = p.getString("gh_login", "") ?: ""
+        set(v) = p.edit().putString("gh_login", v).apply()
+
+    /** Свой OAuth client_id, если стандартный не подходит. */
+    var ghClientId: String
+        get() = p.getString("gh_client_id", "") ?: ""
+        set(v) = p.edit().putString("gh_client_id", v).apply()
+
+    val clientId get() = ghClientId.ifBlank { GithubAuth.DEFAULT_CLIENT_ID }
+
     /** Язык интерфейса: "en" по умолчанию, "ru" — русский. */
     var lang: String
         get() = p.getString("lang", "en") ?: "en"
@@ -144,6 +156,9 @@ class Prefs(ctx: Context) {
         set(v) = p.edit().putString("home", v).apply()
 
     val modsDir get() = File(home, "horizon-mods")
+
+    /** Папка, куда лаунчер клонирует/скачивает гит-репозитории. */
+    val gitDir get() = File(home, "git")
     val resourcePacksDir get() = File(home, "resourcepacks")
     val shaderPacksDir get() = File(home, "shaderpacks")
     val downloadsDir get() = File(home, "launcher")
