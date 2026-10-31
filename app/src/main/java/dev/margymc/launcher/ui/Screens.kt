@@ -373,9 +373,7 @@ fun BuildScreen(prefs: Prefs) {
 @Composable
 fun SettingsScreen(prefs: Prefs) {
     val ctx = LocalContext.current
-    var token by remember { mutableStateOf(prefs.token) }
     var home by remember { mutableStateOf(prefs.home) }
-    var repo by remember { mutableStateOf(prefs.repo) }
     var saved by remember { mutableStateOf(false) }
 
     LazyColumn(
@@ -384,30 +382,8 @@ fun SettingsScreen(prefs: Prefs) {
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         item { ScreenHeader(I18n.t("Ещё"), I18n.t("Подключение, папки и права")) }
-        item {
-            ShapeCard() {
-                Text("GitHub", style = MaterialTheme.typography.titleMedium)
-                OutlinedTextField(
-                    value = token,
-                    onValueChange = { token = it; saved = false },
-                    label = { Text(I18n.t("Токен (repo + workflow)")) },
-                    singleLine = true,
-                    shape = MaterialTheme.shapes.extraLarge,
-                    visualTransformation = PasswordVisualTransformation(),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                Spacer(Modifier.height(10.dp))
-                OutlinedTextField(
-                    value = repo,
-                    onValueChange = { repo = it; saved = false },
-                    label = { Text(I18n.t("Репозиторий сборок (owner/name)")) },
-                    singleLine = true,
-                    shape = MaterialTheme.shapes.extraLarge,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
-        }
+        item { GithubCard(prefs) }
+        item { GitCard(prefs) }
         item {
             ShapeCard() {
                 Text(I18n.t("Папка игры"), style = MaterialTheme.typography.titleMedium)
@@ -429,8 +405,6 @@ fun SettingsScreen(prefs: Prefs) {
         }
         item {
             ExpressiveButton(I18n.t("Сохранить"), Icons.Rounded.Check) {
-                prefs.token = token.trim()
-                prefs.repo = repo.trim()
                 prefs.home = home.trim()
                 saved = true
             }
