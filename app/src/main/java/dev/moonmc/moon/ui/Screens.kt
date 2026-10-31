@@ -40,6 +40,16 @@ fun HorizonScreen(prefs: Prefs) {
     var status by remember { mutableStateOf<String?>(null) }
     var showNative by remember { mutableStateOf(false) }
     var buildEntries by remember { mutableStateOf(BuildList.load(prefs)) }
+    // матрица совместимости для выбранного пина (ci/compat/<pin>.json)
+    var compat by remember { mutableStateOf<Engine.Compat?>(null) }
+
+    LaunchedEffect(prefs.nativePin) {
+        runCatching {
+            withContext(Dispatchers.IO) {
+                Engine.compat(prefs.nativePin, prefs.token.ifBlank { null })
+            }
+        }.onSuccess { compat = it }
+    }
 
     LaunchedEffect(Unit) {
         withContext(Dispatchers.IO) {
@@ -90,6 +100,23 @@ fun HorizonScreen(prefs: Prefs) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     p.latest?.let { v ->
                         StatusPill("v${v.version} · ${v.game}")
+                    }
+                    if (p.isNative) {
+                        compat?.of(p.id)?.let { verdict ->
+                            if (verdict.ok) {
+                                StatusPill(
+                                    I18n.t("на этом движке ✓"),
+                                    MaterialTheme.colorScheme.secondaryContainer,
+                                    MaterialTheme.colorScheme.onSecondaryContainer,
+                                )
+                            } else {
+                                StatusPill(
+                                    I18n.t("на этом движке не собирается"),
+                                    MaterialTheme.colorScheme.errorContainer,
+                                    MaterialTheme.colorScheme.onErrorContainer,
+                                )
+                            }
+                        }
                     }
                     Spacer(Modifier.weight(1f))
                     if (!p.isNative) {
@@ -340,6 +367,7 @@ fun BuildScreen(prefs: Prefs) {
     var engineError by remember { mutableStateOf<String?>(null) }
     var showNewer by remember { mutableStateOf(false) }
     var engineNote by remember { mutableStateOf<String?>(null) }
+    var compat by remember { mutableStateOf<Engine.Compat?>(null) }
 
     fun loadNightlies() {
         scope.launch {
@@ -404,6 +432,11 @@ fun BuildScreen(prefs: Prefs) {
     }
 
     LaunchedEffect(Unit) { loadBundles(); loadNightlies() }
+    LaunchedEffect(pin) {
+        runCatching {
+            withContext(Dispatchers.IO) { Engine.compat(pin, prefs.token.ifBlank { null }) }
+        }.onSuccess { compat = it }.onFailure { compat = null }
+    }
     // пин движка подтягиваем из выбранных модов, если он у них один
     LaunchedEffect(entries) {
         val common = BuildList.commonPin(entries)
@@ -469,6 +502,18 @@ fun BuildScreen(prefs: Prefs) {
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
                             )
+                            val verdict = compat?.of(entry.id.removePrefix("url:"))
+                            if (verdict != null) {
+                                Text(
+                                    if (verdict.ok) I18n.t("на этом движке ✓")
+                                    else I18n.t("на этом движке не собирается: ") + verdict.stage,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = if (verdict.ok) MaterialTheme.colorScheme.primary
+                                    else MaterialTheme.colorScheme.error,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                            }
                         }
                         IconButton(onClick = { entries = BuildList.move(prefs, entry.id, true) }) {
                             Icon(Icons.Rounded.KeyboardArrowUp, contentDescription = I18n.t("выше"))
