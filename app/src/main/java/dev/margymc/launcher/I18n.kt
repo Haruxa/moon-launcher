@@ -128,6 +128,53 @@ object I18n {
         "Кнопка" to "Button",
         "Изменения не сохранены" to "Unsaved changes",
         "Перетаскивай кнопки по экрану" to "Drag buttons around the screen",
+        // ---- GitHub / Git
+        "Привязан" to "Linked",
+        "аккаунт" to "account",
+        "Не привязан — нужен для сборок и модов" to "Not linked — required for builds and mods",
+        "Как привязать" to "How to link",
+        "Привязать GitHub" to "Link GitHub",
+        "Привязка открыта" to "Link window is open",
+        "Обновить список" to "Refresh list",
+        "Отвязать" to "Unlink",
+        "Репозиторий сборок" to "Build repository",
+        "Можно вписать имя вручную или выбрать из списка" to "Type the name manually or pick one from the list",
+        "Поиск по списку репозиториев" to "Search the repository list",
+        "Читаю репозитории…" to "Reading repositories…",
+        "Ничего не найдено" to "Nothing found",
+        "приватный" to "private",
+        "без описания" to "no description",
+        "Готовлю код…" to "Preparing the code…",
+        "Жду подтверждения в браузере…" to "Waiting for confirmation in the browser…",
+        "Не удалось получить код" to "Could not get the code",
+        "Код устарел — закрой окно и начни заново" to "The code expired — close the window and start again",
+        "Код для ввода" to "Code to enter",
+        "Скопировать" to "Copy",
+        "Открыть GitHub" to "Open GitHub",
+        "1. Нажми «Открыть GitHub» — код скопируется.  2. Войди и вставь его.  3. Разреши доступ." to
+            "1. Tap “Open GitHub” — the code is copied.  2. Sign in and paste it.  3. Allow access.",
+        "Если браузер не открылся — вставь токен вручную (Personal access token)" to
+            "If the browser did not open — paste a Personal access token manually",
+        "Проверить токен" to "Check token",
+        "Создать токен" to "Create token",
+        "Нажми «Привязать GitHub». Приложение покажет короткий код вида ABCD-1234 и сразу скопирует его." to
+            "Tap “Link GitHub”. The app shows a short code like ABCD-1234 and copies it right away.",
+        "Нажми «Открыть GitHub» — откроется github.com/login/device. Войди в аккаунт, вставь код, нажми Continue." to
+            "Tap “Open GitHub” — github.com/login/device opens. Sign in, paste the code, tap Continue.",
+        "На странице доступа нажми Authorize. Окно в приложении закроется само — токен уже сохранён." to
+            "On the access page tap Authorize. The app window closes itself — the token is already saved.",
+        "Теперь впиши имя репозитория (owner/name) или выбери его из списка — он подставится в поле «Репозиторий сборок»." to
+            "Now type the repository name (owner/name) or pick it from the list — it fills the build repository field.",
+        "Что даёт доступ: создание и чтение приватных репозиториев и запуск GitHub Actions (сборка APK). Токен хранится только на телефоне." to
+            "Access covers private repos plus GitHub Actions runs (APK builds). The token never leaves the phone.",
+        "Долго не приходит подтверждение? Скопируй код вручную, открой ссылку и введи его сам." to
+            "No confirmation for a while? Copy the code manually, open the link and enter it yourself.",
+        "Понятно" to "Got it",
+        "Ссылка на выбранный репозиторий и команда клонирования" to "Link to the selected repository and the clone command",
+        "Репозиторий не выбран" to "No repository selected",
+        "Копировать" to "Copy",
+        "Открыть" to "Open",
+        "Папка для репозиториев: " to "Repository folder: ",
         // ---- общее
         "Ошибка: " to "Error: ",
         "Готово" to "Done",
