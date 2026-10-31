@@ -11,7 +11,7 @@
         android:label="MargyMC Launcher"
         android:requestLegacyExternalStorage="false"
         android:supportsRtl="true"
-        android:theme="@android:style/Theme.Material.NoActionBar">
+        android:theme="@android:style/Theme.Material.Light.NoActionBar">
 
         <activity
             android:name=".MainActivity"
@@ -28,7 +28,7 @@
             android:name=".TouchEditorActivity"
             android:exported="false"
             android:screenOrientation="sensorLandscape"
-            android:theme="@android:style/Theme.Material.NoActionBar.Fullscreen"
+            android:theme="@android:style/Theme.Material.Light.NoActionBar.Fullscreen"
             android:configChanges="orientation|screenSize|keyboardHidden|uiMode" />
 
         <provider
