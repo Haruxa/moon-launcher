@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Build
 import androidx.compose.material.icons.outlined.Extension
-import androidx.compose.material.icons.outlined.Gamepad
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Public
 import androidx.compose.material.icons.outlined.Settings
@@ -57,7 +56,6 @@ class MainActivity : ComponentActivity() {
 private enum class Tab(val title: String, val icon: ImageVector) {
     HORIZON("Моды", Icons.Outlined.Extension),
     MODRINTH("Modrinth", Icons.Outlined.Public),
-    TOUCH("Управление", Icons.Outlined.Gamepad),
     BUILD("Сборка", Icons.Outlined.Build),
     ABOUT("О нас", Icons.Outlined.Info),
     SETTINGS("Ещё", Icons.Outlined.Settings),
@@ -98,7 +96,6 @@ fun App(prefs: Prefs) {
             when (tab) {
                 Tab.HORIZON -> HorizonScreen(prefs)
                 Tab.MODRINTH -> ModrinthScreen(prefs)
-                Tab.TOUCH -> TouchScreen(prefs)
                 Tab.BUILD -> BuildScreen(prefs)
                 Tab.ABOUT -> AboutScreen(prefs)
                 Tab.SETTINGS -> SettingsScreen(prefs)
