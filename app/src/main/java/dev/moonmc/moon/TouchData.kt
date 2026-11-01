@@ -96,35 +96,39 @@ object TouchProfiles {
         setActive(prefs, file.nameWithoutExtension)
     }
 
+    /** Одна кнопка из JSON (свой формат). */
+    fun fromJson(o: JSONObject): Control? {
+        val action = o.optJSONObject("action")
+        val kind = if (action == null) "builtin" else kinds.firstOrNull { action.has(it) } ?: "builtin"
+        val value = when (kind) {
+            "macro" -> action?.optJSONArray("macro")?.let { arr ->
+                (0 until arr.length()).joinToString(" ") { arr.optString(it) }
+            } ?: ""
+            "builtin" -> ""
+            else -> action?.optString(kind, "") ?: ""
+        }
+        val modes = o.optJSONArray("modes")?.let { arr ->
+            (0 until arr.length()).map { arr.optString(it) }
+        } ?: emptyList()
+        val id = o.optString("id", "")
+        if (id.isBlank()) return null
+        return Control(
+            icon = o.optString("icon", ""),
+            id = id,
+            label = o.optString("label", ""),
+            x = o.optDouble("x", 0.5).toFloat(),
+            y = o.optDouble("y", 0.5).toFloat(),
+            r = o.optDouble("r", 18.0).toFloat(),
+            modes = modes,
+            kind = kind,
+            value = value,
+        )
+    }
+
     fun read(file: File): List<Control> = runCatching {
         val root = JSONObject(file.readText())
         val list = root.optJSONArray("controls") ?: JSONArray()
-        (0 until list.length()).mapNotNull { i ->
-            val o = list.optJSONObject(i) ?: return@mapNotNull null
-            val action = o.optJSONObject("action")
-            val kind = if (action == null) "builtin" else kinds.firstOrNull { action.has(it) } ?: "builtin"
-            val value = when (kind) {
-                "macro" -> action?.optJSONArray("macro")?.let { arr ->
-                    (0 until arr.length()).joinToString(" ") { arr.optString(it) }
-                } ?: ""
-                "builtin" -> ""
-                else -> action?.optString(kind, "") ?: ""
-            }
-            val modes = o.optJSONArray("modes")?.let { arr ->
-                (0 until arr.length()).map { arr.optString(it) }
-            } ?: emptyList()
-            Control(
-                icon = o.optString("icon", ""),
-                id = o.optString("id", ""),
-                label = o.optString("label", ""),
-                x = o.optDouble("x", 0.5).toFloat(),
-                y = o.optDouble("y", 0.5).toFloat(),
-                r = o.optDouble("r", 18.0).toFloat(),
-                modes = modes,
-                kind = kind,
-                value = value,
-            )
-        }
+        (0 until list.length()).mapNotNull { i -> list.optJSONObject(i)?.let(::fromJson) }
     }.getOrDefault(emptyList())
 
     fun write(file: File, name: String, controls: List<Control>) {
