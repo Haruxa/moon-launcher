@@ -8,7 +8,7 @@
 
 <p align="center">
   <a href="https://github.com/Haruxa/moon-launcher/actions/workflows/gradle.yml"><img src="https://github.com/Haruxa/moon-launcher/actions/workflows/gradle.yml/badge.svg" alt="build"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-9BE8BE?style=flat-square" alt="MIT"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPL--3.0-9BE8BE?style=flat-square" alt="GPL-3.0"></a>
   <img src="https://img.shields.io/badge/Android-10%2B-3DDC84?style=flat-square&logo=android&logoColor=white" alt="Android 10+">
   <img src="https://img.shields.io/badge/Kotlin-2.4-7F52FF?style=flat-square&logo=kotlin&logoColor=white" alt="Kotlin">
   <img src="https://img.shields.io/badge/Jetpack%20Compose-M3%20Expressive-4285F4?style=flat-square&logo=jetpackcompose&logoColor=white" alt="Compose">
@@ -97,5 +97,5 @@ Full third‑party list: [NOTICE.md](NOTICE.md).
 
 ## License
 
-[MIT](LICENSE). Not affiliated with, endorsed by or sponsored by Mojang Studios or Microsoft.
+[GPL-3.0](LICENSE). Not affiliated with, endorsed by or sponsored by Mojang Studios or Microsoft.
 Minecraft is a trademark of Mojang Studios; no Minecraft files are distributed here.
