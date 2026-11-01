@@ -17,6 +17,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import dev.moonmc.moon.I18n
 import dev.moonmc.moon.Prefs
+import dev.moonmc.moon.ProfileIO
 import dev.moonmc.moon.TouchEditorActivity
 import dev.moonmc.moon.TouchProfiles
 import java.io.File
