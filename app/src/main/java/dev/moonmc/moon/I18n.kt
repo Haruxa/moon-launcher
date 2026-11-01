@@ -57,6 +57,11 @@ object I18n {
                 "the game uses your own copy.",
         "Minecraft — торговая марка Mojang Studios. Проект не связан с Mojang и Microsoft." to
             "Minecraft is a trademark of Mojang Studios. Not affiliated with Mojang or Microsoft.",
+        "Импорт" to "Import",
+        "Отправить" to "Share",
+        "Импортировано: " to "Imported: ",
+        "Ошибка импорта: " to "Import failed: ",
+        "в файле нет знакомых кнопок" to "the file has no buttons we recognise",
         "Иконка" to "Icon",
         "подпись" to "label",
         "Встроенные профили" to "Built-in profiles",
