@@ -33,6 +33,24 @@ fun TouchScreen(prefs: Prefs) {
     var tick by remember { mutableStateOf(0) }
     var status by remember { mutableStateOf<String?>(null) }
 
+    // Импорт чужого/своего профиля: файл -> профиль в папке игры + активный
+    val importer = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        runCatching {
+            val text = ctx.contentResolver.openInputStream(uri)!!.use { it.readBytes().decodeToString() }
+            val parsed = ProfileIO.parse(text) ?: error(I18n.t("в файле нет знакомых кнопок"))
+            val name = (uri.lastPathSegment ?: "import").substringAfterLast('/').substringBeforeLast('.')
+            ProfileIO.install(prefs, "import-" + name.take(24), parsed)
+        }.onSuccess { file ->
+            profiles = TouchProfiles.list(prefs)
+            active = TouchProfiles.active(prefs)
+            tick++
+            status = I18n.t("Импортировано: ") + file.nameWithoutExtension
+        }.onFailure { status = I18n.t("Ошибка импорта: ") + (it.message ?: "") }
+    }
+
     LaunchedEffect(prefs.home, tick) {
         TouchProfiles.ensureDefault(prefs)
         profiles = TouchProfiles.list(prefs)
@@ -105,6 +123,9 @@ fun TouchScreen(prefs: Prefs) {
                         TouchProfiles.ensureDefault(prefs)
                         tick++
                     }) { Text(I18n.t("Удалить")) }
+                    ExpressiveButton(I18n.t("Отправить"), Icons.Rounded.Share) {
+                        ProfileIO.share(ctx, file)
+                    }
                 }
             }
         }
